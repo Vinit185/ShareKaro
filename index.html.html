@@ -633,6 +633,148 @@
       margin: 0 auto;
       border-radius: 0.75rem;
     }
+
+    /* =========================================================================
+       FUTURISTIC NEON CAR LOGIN CELEBRATION ANIMATION
+    ========================================================================= */
+    #carLoginOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: radial-gradient(circle at 50% 45%, rgba(15, 23, 42, 0.92) 0%, rgba(5, 8, 22, 0.98) 100%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #carLoginOverlay.active {
+      display: flex;
+      animation: overlayFadeIn 0.3s ease forwards;
+    }
+
+    #carLoginOverlay.closing {
+      animation: overlayFadeOut 0.45s ease forwards;
+    }
+
+    @keyframes overlayFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes overlayFadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    /* Cyber Perspective Road Grid */
+    .cyber-road {
+      position: absolute;
+      bottom: 0;
+      left: -25%;
+      width: 150%;
+      height: 44vh;
+      background:
+        linear-gradient(180deg, rgba(0, 242, 254, 0.28) 0%, rgba(123, 47, 247, 0.08) 25%, transparent 100%),
+        repeating-linear-gradient(90deg, rgba(0, 242, 254, 0.16) 0px, rgba(0, 242, 254, 0.16) 2px, transparent 2px, transparent 68px),
+        repeating-linear-gradient(0deg, rgba(255, 42, 133, 0.14) 0px, rgba(255, 42, 133, 0.14) 2px, transparent 2px, transparent 36px);
+      transform: perspective(420px) rotateX(62deg);
+      transform-origin: bottom center;
+      animation: roadScroll 0.45s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes roadScroll {
+      0% { background-position: 0 0, 0 0, 0 0; }
+      100% { background-position: 0 0, -68px 0, 0 0; }
+    }
+
+    /* Horizontal Neon Speed Lines */
+    .car-speed-line {
+      position: absolute;
+      height: 2px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, transparent, #00f2fe, #ff2a85, transparent);
+      opacity: 0;
+      animation: speedStreak var(--dur, 0.65s) linear infinite;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes speedStreak {
+      0% { transform: translateX(110vw); opacity: 0; }
+      20% { opacity: 0.85; }
+      80% { opacity: 0.85; }
+      100% { transform: translateX(-110vw); opacity: 0; }
+    }
+
+    /* Supercar Drive-In -> Drift Brake -> Nitro Launch Sequence */
+    .car-stage-wrapper {
+      position: relative;
+      width: min(92vw, 480px);
+      will-change: transform, filter;
+      animation: carDriveSequence 3.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes carDriveSequence {
+      0% {
+        transform: translate3d(-120vw, 10px, 0) skewX(-12deg) scale(0.92);
+        filter: drop-shadow(-30px 0 28px rgba(0, 242, 254, 0.85));
+      }
+      26% {
+        transform: translate3d(14px, 0px, 0) skewX(4deg) scale(1.03);
+        filter: drop-shadow(0 0 36px rgba(0, 242, 254, 0.75));
+      }
+      34% {
+        transform: translate3d(0px, 0px, 0) skewX(0deg) scale(1);
+        filter: drop-shadow(0 0 28px rgba(123, 47, 247, 0.7));
+      }
+      72% {
+        transform: translate3d(0px, -3px, 0) skewX(0deg) scale(1.01);
+        filter: drop-shadow(0 0 34px rgba(0, 230, 118, 0.75));
+      }
+      80% {
+        transform: translate3d(-18px, 2px, 0) skewX(-6deg) scale(0.98);
+        filter: drop-shadow(-18px 0 42px rgba(255, 42, 133, 0.95));
+      }
+      100% {
+        transform: translate3d(135vw, -6px, 0) skewX(-16deg) scale(1.08);
+        filter: drop-shadow(-60px 0 55px rgba(0, 242, 254, 1));
+      }
+    }
+
+    .car-wheel-spin {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: wheelRotate 0.24s linear infinite;
+    }
+
+    @keyframes wheelRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .car-nitro-flame {
+      transform-box: fill-box;
+      transform-origin: right center;
+      animation: nitroFlicker 0.12s ease-in-out infinite alternate;
+    }
+
+    @keyframes nitroFlicker {
+      0% { transform: scaleX(0.75) scaleY(0.9); opacity: 0.75; }
+      100% { transform: scaleX(1.35) scaleY(1.12); opacity: 1; }
+    }
+
+    .car-welcome-banner {
+      animation: carBannerPop 3.1s ease forwards;
+    }
+
+    @keyframes carBannerPop {
+      0%, 18% { opacity: 0; transform: translateY(22px) scale(0.92); }
+      32%, 78% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-18px) scale(0.95); }
+    }
   </style>
 </head>
 <body class="antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
@@ -738,6 +880,202 @@
     </div>
   </div>
 
+  <!-- Optional Login / Sign-Up Modal (E2EE Personal Vault) -->
+  <div id="authModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full border border-cyan-400/35 animate-pop-in relative overflow-hidden">
+      <!-- Top Glow Accent -->
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-violet-500 to-pink-500"></div>
+
+      <div class="flex items-center justify-between gap-3 mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-violet-500/25 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-white">ShareKro <span class="text-gradient">Vault ID</span></h3>
+            <p class="text-[11px] text-slate-400">Optional · Save & beam files from your E2EE account</p>
+          </div>
+        </div>
+        <button id="authModalClose" type="button" data-cursor="CLOSE"
+          class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+          aria-label="Close login modal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Login / Sign Up Mode Switch -->
+      <div class="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-800 mb-5">
+        <button id="authTabLogin" type="button" data-cursor="LOGIN"
+          class="py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-md">
+          Login to ID
+        </button>
+        <button id="authTabSignup" type="button" data-cursor="SIGNUP"
+          class="py-2 rounded-xl text-xs font-bold transition cursor-pointer text-slate-400 hover:text-white">
+          Create Free ID
+        </button>
+      </div>
+
+      <form id="authForm" class="flex flex-col gap-3.5">
+        <div id="authNameWrap" class="hidden">
+          <label for="authNameInput" class="block text-[11px] font-semibold text-slate-300 mb-1">Display Name</label>
+          <input id="authNameInput" type="text" placeholder="e.g. Aarav"
+            class="w-full px-4 py-3 rounded-2xl bg-slate-900/85 border border-slate-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none text-sm text-white placeholder-slate-500 transition" />
+        </div>
+
+        <div>
+          <label for="authEmailInput" class="block text-[11px] font-semibold text-slate-300 mb-1">Account ID or Email</label>
+          <input id="authEmailInput" type="text" required placeholder="you@example.com or username"
+            class="w-full px-4 py-3 rounded-2xl bg-slate-900/85 border border-slate-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none text-sm text-white placeholder-slate-500 transition" />
+        </div>
+
+        <div>
+          <label for="authPasswordInput" class="block text-[11px] font-semibold text-slate-300 mb-1">E2EE Vault Password</label>
+          <input id="authPasswordInput" type="password" required minlength="4" placeholder="Enter your encryption password"
+            class="w-full px-4 py-3 rounded-2xl bg-slate-900/85 border border-slate-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none text-sm text-white placeholder-slate-500 transition" />
+        </div>
+
+        <p id="authFormError" class="text-xs text-rose-400 hidden"></p>
+
+        <!-- Security Notice -->
+        <div class="rounded-2xl bg-emerald-500/10 border border-emerald-400/20 px-3.5 py-2.5 flex items-start gap-2.5">
+          <svg class="w-4 h-4 text-emerald-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <p class="text-[11px] text-emerald-100/90 leading-snug">
+            <strong class="text-emerald-300">Zero-Knowledge AES-256-GCM:</strong> Your password derives a local encryption key via PBKDF2. Every file saved to your unlimited vault is encrypted before storage.
+          </p>
+        </div>
+
+        <button id="authSubmitBtn" type="submit" data-cursor="UNLOCK"
+          class="magnetic-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-pink-500 hover:brightness-110 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition cursor-pointer mt-1">
+          Login & Unlock Vault
+        </button>
+
+        <button id="authGuestBtn" type="button" data-cursor="GUEST"
+          class="w-full py-2.5 rounded-2xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition cursor-pointer">
+          Continue Without Login (Instant P2P)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Futuristic Neon Car Login Celebration Overlay -->
+  <div id="carLoginOverlay" aria-hidden="true">
+    <div class="cyber-road"></div>
+
+    <!-- High-Speed Neon Streaks -->
+    <div class="car-speed-line" style="top: 22%; width: 220px; --dur: 0.55s; --delay: 0s;"></div>
+    <div class="car-speed-line" style="top: 34%; width: 320px; --dur: 0.48s; --delay: 0.14s;"></div>
+    <div class="car-speed-line" style="top: 48%; width: 260px; --dur: 0.6s; --delay: 0.28s;"></div>
+    <div class="car-speed-line" style="top: 66%; width: 340px; --dur: 0.42s; --delay: 0.08s;"></div>
+    <div class="car-speed-line" style="top: 76%; width: 200px; --dur: 0.52s; --delay: 0.22s;"></div>
+
+    <div class="relative z-10 flex flex-col items-center justify-center gap-6 px-4 text-center">
+      <!-- Welcome Header -->
+      <div class="car-welcome-banner flex flex-col items-center gap-2">
+        <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 shadow-[0_0_24px_rgba(16,185,129,0.4)]">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          AES-256-GCM E2EE VAULT UNLOCKED
+        </span>
+        <h2 id="carWelcomeTitle" class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+          Welcome Back, <span class="text-gradient">Pilot</span>!
+        </h2>
+        <p class="text-xs sm:text-sm text-cyan-200/80 font-medium">Unlimited Encrypted ShareKro Storage Ready for Launch</p>
+      </div>
+
+      <!-- Custom Futuristic Neon Cyber-Supercar SVG -->
+      <div id="carStageWrapper" class="car-stage-wrapper">
+        <svg viewBox="0 0 560 190" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto overflow-visible">
+          <defs>
+            <linearGradient id="carBodyGrad" x1="80" y1="55" x2="490" y2="145" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#0f172a" />
+              <stop offset="45%" stop-color="#1e1b4b" />
+              <stop offset="100%" stop-color="#090d1f" />
+            </linearGradient>
+            <linearGradient id="carNeonTrim" x1="70" y1="90" x2="500" y2="115" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ff2a85" />
+              <stop offset="50%" stop-color="#7b2ff7" />
+              <stop offset="100%" stop-color="#00f2fe" />
+            </linearGradient>
+            <linearGradient id="carGlassGrad" x1="185" y1="44" x2="365" y2="85" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.72" />
+              <stop offset="55%" stop-color="#7b2ff7" stop-opacity="0.45" />
+              <stop offset="100%" stop-color="#0f172a" stop-opacity="0.85" />
+            </linearGradient>
+            <linearGradient id="nitroGrad" x1="0" y1="120" x2="95" y2="120" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#00f2fe" stop-opacity="0" />
+              <stop offset="55%" stop-color="#ff2a85" stop-opacity="0.85" />
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="1" />
+            </linearGradient>
+            <linearGradient id="headlightBeam" x1="485" y1="108" x2="620" y2="128" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.7" />
+              <stop offset="100%" stop-color="#00f2fe" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="underglow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.85" />
+              <stop offset="60%" stop-color="#7b2ff7" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#00f2fe" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+
+          <!-- Neon Underglow Shadow -->
+          <ellipse cx="295" cy="158" rx="195" ry="14" fill="url(#underglow)" />
+
+          <!-- Headlight Laser Cone -->
+          <polygon points="484,104 615,82 615,146 484,120" fill="url(#headlightBeam)" />
+
+          <!-- Nitro Exhaust Flame -->
+          <g class="car-nitro-flame">
+            <path d="M96 116 L18 111 L48 121 L6 125 L54 130 L26 136 L96 128 Z" fill="url(#nitroGrad)" />
+            <ellipse cx="86" cy="122" rx="16" ry="5" fill="#ffffff" opacity="0.9" />
+          </g>
+
+          <!-- Rear Aero Wing / Spoiler -->
+          <path d="M92 84 L126 84 L112 64 L78 60 Z" fill="#0f172a" stroke="#ff2a85" stroke-width="2.2" stroke-linejoin="round" />
+
+          <!-- Main Cyber-Supercar Chassis -->
+          <path d="M96 130 L92 104 L118 88 L178 82 L238 48 L338 48 L402 82 L478 95 C496 99 504 110 502 126 L494 136 L444 138 C444 115 426 100 404 100 C382 100 364 115 364 138 L216 138 C216 115 198 100 176 100 C154 100 136 115 136 138 L104 136 Z"
+                fill="url(#carBodyGrad)" stroke="url(#carNeonTrim)" stroke-width="2.8" stroke-linejoin="round" />
+
+          <!-- Sleek Canopy Windshield -->
+          <path d="M192 80 L244 54 L334 54 L388 81 Z" fill="url(#carGlassGrad)" stroke="#00f2fe" stroke-width="1.6" />
+          <path d="M278 54 L268 81" stroke="#050816" stroke-width="3" />
+
+          <!-- Side Neon Accent Line & ShareKro Door Emblem -->
+          <path d="M126 102 L248 96 L396 104 L478 108" stroke="url(#carNeonTrim)" stroke-width="2.6" stroke-linecap="round" />
+          <path d="M236 116 L342 116" stroke="#00f2fe" stroke-width="1.8" stroke-dasharray="6 4" opacity="0.85" />
+          <text x="248" y="112" fill="#00f2fe" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" letter-spacing="2">SHAREKRO</text>
+
+          <!-- Glowing Tail Light -->
+          <rect x="92" y="96" width="16" height="6" rx="3" fill="#ff2a85" />
+          <!-- Glowing Headlight -->
+          <path d="M466 102 L494 106 L488 114 L462 110 Z" fill="#00f2fe" />
+
+          <!-- Rear Wheel -->
+          <g class="car-wheel-spin">
+            <circle cx="176" cy="136" r="29" fill="#050816" stroke="#ff2a85" stroke-width="3.2" />
+            <circle cx="176" cy="136" r="19" fill="#0f172a" stroke="#00f2fe" stroke-width="2" />
+            <path d="M176 117 L176 155 M157 136 L195 136 M163 123 L189 149 M189 123 L163 149" stroke="#7b2ff7" stroke-width="2.2" stroke-linecap="round" />
+            <circle cx="176" cy="136" r="5" fill="#00f2fe" />
+          </g>
+
+          <!-- Front Wheel -->
+          <g class="car-wheel-spin">
+            <circle cx="404" cy="136" r="29" fill="#050816" stroke="#00f2fe" stroke-width="3.2" />
+            <circle cx="404" cy="136" r="19" fill="#0f172a" stroke="#ff2a85" stroke-width="2" />
+            <path d="M404 117 L404 155 M385 136 L423 136 M391 123 L417 149 M417 123 L391 149" stroke="#00e676" stroke-width="2.2" stroke-linecap="round" />
+            <circle cx="404" cy="136" r="5" fill="#ff2a85" />
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Application Wrapper -->
   <div class="relative z-10 min-h-screen flex flex-col">
 
@@ -776,6 +1114,24 @@
 
         <!-- Right Header Controls: Demo Button, Radar Status Pill, Sound Toggle -->
         <div class="flex items-center gap-2 sm:gap-2.5">
+          <!-- Optional Login / Account Vault Button -->
+          <button id="authHeaderBtn" type="button" data-cursor="VAULT" title="Optional Login to Encrypted ShareKro Vault"
+            class="magnetic-btn px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-cyan-300 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span id="authHeaderLabel" class="truncate max-w-[82px] sm:max-w-[120px]">Login</span>
+          </button>
+
+          <!-- Logout Button (Visible only when logged in) -->
+          <button id="logoutHeaderBtn" type="button" data-cursor="EXIT" title="Sign out of ShareKro Vault"
+            class="hidden p-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-rose-300 transition cursor-pointer"
+            aria-label="Logout">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+
           <!-- Built-in Single-Device Animation Demo Button -->
           <button id="demoTransferBtn" type="button" data-cursor="DEMO" title="Preview ShareKro transfer & celebration animations"
             class="magnetic-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-violet-500/25 to-pink-500/25 hover:from-violet-500/40 hover:to-pink-500/40 border border-violet-400/45 text-violet-100 text-xs font-semibold flex items-center gap-1.5 shadow-[0_0_20px_rgba(123,47,247,0.3)] cursor-pointer">
@@ -860,31 +1216,35 @@
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-300 border border-violet-500/25">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
-              64KB Chunked Streaming
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-pink-500/10 text-pink-300 border border-pink-500/25">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-12.728 12.728M6.343 6.343A8 8 0 1 0 17.657 17.657 8 8 0 0 0 6.343 6.343z"/></svg>
-              Zero Server Storage
+              Turbo 256KB Pipelined Streaming
             </span>
           </div>
         </div>
 
-        <!-- Mode Switcher (Send Files / Receive Files) -->
+        <!-- Mode Switcher (Send Files / Receive Files / My Vault) -->
         <div class="relative z-10 flex justify-center">
-          <div class="glass-panel p-1.5 rounded-2xl inline-flex items-center gap-1.5">
+          <div class="glass-panel p-1.5 rounded-2xl inline-flex flex-wrap justify-center items-center gap-1.5">
             <button id="tabSendBtn" type="button" data-cursor="SEND"
-              class="magnetic-btn px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25">
+              class="magnetic-btn px-5 sm:px-7 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Send Files
             </button>
             <button id="tabReceiveBtn" type="button" data-cursor="RECEIVE"
-              class="magnetic-btn px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5">
+              class="magnetic-btn px-5 sm:px-7 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               Receive Files
+            </button>
+            <button id="tabVaultBtn" type="button" data-cursor="VAULT"
+              class="magnetic-btn px-5 sm:px-7 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              My Vault
+              <span id="vaultCountPill" class="hidden px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/35">0</span>
             </button>
           </div>
         </div>
@@ -1071,6 +1431,77 @@
                   <input id="autoDownloadToggle" type="checkbox" checked class="sr-only peer" />
                   <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                 </label>
+              </div>
+            </div>
+
+            <!-- MY ENCRYPTED ACCOUNT VAULT PANEL (OPTIONAL LOGIN) -->
+            <div id="vaultPanel" class="glass-panel spotlight-card rounded-3xl p-5 sm:p-7 flex-col gap-5 hidden">
+              <!-- Guest Locked Prompt (Shown when not logged in) -->
+              <div id="vaultGuestView" class="py-6 text-center flex flex-col items-center gap-4">
+                <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-violet-500/20 to-pink-500/20 border border-cyan-400/35 flex items-center justify-center text-cyan-300 shadow-[0_0_30px_rgba(0,242,254,0.2)]">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div class="max-w-md">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 mb-2">
+                    Optional · AES-256-GCM End-to-End Encrypted
+                  </span>
+                  <h2 class="text-xl sm:text-2xl font-extrabold text-white">Your Unlimited ShareKro Vault</h2>
+                  <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                    Login is <strong class="text-slate-200">never mandatory</strong> for P2P sharing. Create a free ShareKro ID if you want to save encrypted files in your personal account and select them anytime to beam to any device!
+                  </p>
+                </div>
+                <button id="vaultOpenLoginBtn" type="button" data-cursor="LOGIN"
+                  class="magnetic-btn px-7 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-pink-500 hover:brightness-110 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition cursor-pointer">
+                  Login / Create Free Vault ID
+                </button>
+              </div>
+
+              <!-- Logged-In Encrypted Vault Dashboard -->
+              <div id="vaultLoggedInView" class="hidden flex-col gap-5">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h2 id="vaultOwnerTitle" class="text-lg sm:text-xl font-extrabold text-white">My Encrypted Vault</h2>
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
+                        ∞ UNLIMITED
+                      </span>
+                    </div>
+                    <p id="vaultStatsText" class="text-xs text-slate-400 mt-0.5">0 files saved · 0 B encrypted with AES-256-GCM</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input id="vaultFileInput" type="file" multiple class="hidden" />
+                    <button id="vaultUploadBtn" type="button" data-cursor="SAVE"
+                      class="magnetic-btn px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition cursor-pointer">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Save Files to Vault
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Vault Dropzone -->
+                <div id="vaultDropZone" data-cursor="ENCRYPT" data-cursor-mode="drop"
+                  class="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 rounded-2xl p-5 text-center transition-all cursor-pointer bg-emerald-500/5">
+                  <p class="text-xs sm:text-sm font-semibold text-emerald-200">
+                    Drag & drop any files here to <span class="text-white underline underline-offset-2">encrypt & save</span> in your personal account
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-1">All formats supported · Encrypted with your AES-256-GCM key · Select anytime to send via P2P</p>
+                </div>
+
+                <!-- Vault Search -->
+                <div class="relative">
+                  <input id="vaultSearchInput" type="text" data-cursor="SEARCH" placeholder="Search your saved encrypted files..."
+                    class="w-full px-4 py-2.5 rounded-xl bg-slate-950/75 border border-slate-700/80 focus:border-cyan-400 outline-none text-xs sm:text-sm text-white placeholder-slate-500 transition" />
+                </div>
+
+                <!-- Vault Files List -->
+                <div id="vaultEmptyState" class="py-8 text-center text-xs text-slate-400">
+                  Your encrypted vault is empty. Click <strong class="text-emerald-300">Save Files to Vault</strong> above to store photos, videos, Word, Excel, or PDFs securely!
+                </div>
+                <div id="vaultFileList" class="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1"></div>
               </div>
             </div>
 
@@ -1380,9 +1811,9 @@
               </svg>
             </div>
             <div>
-              <h3 class="text-xl font-bold text-white">64KB Chunked Streaming</h3>
+              <h3 class="text-xl font-bold text-white">Turbo 256KB Double-Buffered Streaming</h3>
               <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
-                Adaptive <span class="font-mono text-pink-300">bufferedAmount</span> backpressure keeps memory stable so you can send huge multi-gigabyte videos and archives smoothly.
+                Pipelined read-ahead chunking with a 12MB <span class="font-mono text-pink-300">bufferedAmount</span> SCTP window maximizes Wi-Fi, 5G & LAN speeds for multi-gigabyte transfers.
               </p>
             </div>
           </div>
@@ -1414,12 +1845,13 @@
   <!-- Application Script -->
   <script>
     /* =========================================================================
-       1. CONFIGURATION & APPLICATION STATE
+       1. CONFIGURATION & APPLICATION STATE (TURBO HIGH-SPEED ENGINE)
     ========================================================================= */
     const PEER_PREFIX = 'sharekro-p2p-v1-';
-    const CHUNK_SIZE = 64 * 1024; // 64KB high-speed WebRTC binary chunks
-    const MAX_BUFFERED_AMOUNT = 4 * 1024 * 1024; // 4MB backpressure ceiling
-    const BUFFER_LOW_THRESHOLD = 512 * 1024; // 512KB resume threshold
+    const DEFAULT_CHUNK_SIZE = 256 * 1024; // 256KB Turbo WebRTC binary chunks
+    const SAFE_MIN_CHUNK_SIZE = 64 * 1024; // 64KB fallback if remote SCTP caps message size
+    const MAX_BUFFERED_AMOUNT = 12 * 1024 * 1024; // 12MB high-throughput SCTP pipeline ceiling
+    const BUFFER_LOW_THRESHOLD = 4 * 1024 * 1024; // 4MB early-refill threshold to prevent stalls
 
     const ICE_SERVERS = [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -1445,6 +1877,11 @@
       logCount: 0,
       demoRunning: false,
       sandboxNotified: false,
+      // Optional E2EE Account Vault State
+      authMode: 'login',
+      user: null,          // { id, email, name }
+      vaultKey: null,      // CryptoKey (AES-256-GCM)
+      vaultFiles: [],      // Metadata array for logged-in user's saved files
     };
 
     /* =========================================================================
@@ -1468,6 +1905,26 @@
       previewModalBody: document.getElementById('previewModalBody'),
       previewModalClose: document.getElementById('previewModalClose'),
 
+      authModal: document.getElementById('authModal'),
+      authModalClose: document.getElementById('authModalClose'),
+      authTabLogin: document.getElementById('authTabLogin'),
+      authTabSignup: document.getElementById('authTabSignup'),
+      authForm: document.getElementById('authForm'),
+      authNameWrap: document.getElementById('authNameWrap'),
+      authNameInput: document.getElementById('authNameInput'),
+      authEmailInput: document.getElementById('authEmailInput'),
+      authPasswordInput: document.getElementById('authPasswordInput'),
+      authFormError: document.getElementById('authFormError'),
+      authSubmitBtn: document.getElementById('authSubmitBtn'),
+      authGuestBtn: document.getElementById('authGuestBtn'),
+      authHeaderBtn: document.getElementById('authHeaderBtn'),
+      authHeaderLabel: document.getElementById('authHeaderLabel'),
+      logoutHeaderBtn: document.getElementById('logoutHeaderBtn'),
+
+      carLoginOverlay: document.getElementById('carLoginOverlay'),
+      carWelcomeTitle: document.getElementById('carWelcomeTitle'),
+      carStageWrapper: document.getElementById('carStageWrapper'),
+
       demoTransferBtn: document.getElementById('demoTransferBtn'),
       statusSonarRing: document.getElementById('statusSonarRing'),
       connectionPill: document.getElementById('connectionPill'),
@@ -1479,8 +1936,22 @@
 
       tabSendBtn: document.getElementById('tabSendBtn'),
       tabReceiveBtn: document.getElementById('tabReceiveBtn'),
+      tabVaultBtn: document.getElementById('tabVaultBtn'),
+      vaultCountPill: document.getElementById('vaultCountPill'),
       sendPanel: document.getElementById('sendPanel'),
       receivePanel: document.getElementById('receivePanel'),
+      vaultPanel: document.getElementById('vaultPanel'),
+      vaultGuestView: document.getElementById('vaultGuestView'),
+      vaultLoggedInView: document.getElementById('vaultLoggedInView'),
+      vaultOpenLoginBtn: document.getElementById('vaultOpenLoginBtn'),
+      vaultOwnerTitle: document.getElementById('vaultOwnerTitle'),
+      vaultStatsText: document.getElementById('vaultStatsText'),
+      vaultFileInput: document.getElementById('vaultFileInput'),
+      vaultUploadBtn: document.getElementById('vaultUploadBtn'),
+      vaultDropZone: document.getElementById('vaultDropZone'),
+      vaultSearchInput: document.getElementById('vaultSearchInput'),
+      vaultEmptyState: document.getElementById('vaultEmptyState'),
+      vaultFileList: document.getElementById('vaultFileList'),
 
       beamStage: document.getElementById('beamStage'),
       beamStageTitle: document.getElementById('beamStageTitle'),
@@ -1707,6 +2178,26 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         const now = audioCtx.currentTime;
+        if (type === 'car') {
+          // Futuristic cyber-supercar turbine rev + nitro boost chime
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(75, now);
+          osc.frequency.exponentialRampToValueAtTime(220, now + 0.55);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 1.1);
+          osc.frequency.exponentialRampToValueAtTime(480, now + 2.35);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.exponentialRampToValueAtTime(0.055, now + 0.25);
+          gain.gain.exponentialRampToValueAtTime(0.03, now + 1.6);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.55);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 2.6);
+          return;
+        }
+
         const notes = type === 'connect' ? [523.25, 659.25, 783.99] : [587.33, 783.99, 1046.5];
 
         notes.forEach((freq, idx) => {
@@ -2686,8 +3177,20 @@
     }
 
     /* =========================================================================
-       7. HIGH-SPEED 64KB CHUNKED STREAMING ENGINE (WITH BACKPRESSURE)
+       7. TURBO 256KB DOUBLE-BUFFERED STREAMING ENGINE (WITH SCTP PIPELINING)
     ========================================================================= */
+    function getOptimalChunkSize(conn) {
+      try {
+        const pc = conn && conn.peerConnection;
+        const maxMsg = pc && pc.sctp && pc.sctp.maxMessageSize;
+        if (maxMsg && maxMsg >= SAFE_MIN_CHUNK_SIZE) {
+          // Leave headroom below SCTP maxMessageSize, capped at 256KB for peak throughput
+          return Math.min(DEFAULT_CHUNK_SIZE, Math.max(SAFE_MIN_CHUNK_SIZE, Math.floor((maxMsg - 1024) / 16384) * 16384));
+        }
+      } catch (_) {}
+      return DEFAULT_CHUNK_SIZE;
+    }
+
     function enqueueFiles(fileList) {
       const files = Array.from(fileList || []);
       if (!files.length) return;
@@ -2735,7 +3238,8 @@
           resolve();
         };
         dc.addEventListener('bufferedamountlow', finish);
-        setTimeout(finish, 100);
+        // Fast 25ms safety wake-up keeps the SCTP pipeline saturated on all mobile/desktop browsers
+        setTimeout(finish, 25);
       });
     }
 
@@ -2758,9 +3262,10 @@
       const { id, file } = item;
       const meta = getFileTypeMeta(file.name, file.type);
       const dc = state.conn.dataChannel;
+      const chunkSize = getOptimalChunkSize(state.conn);
 
       el.beamStage.classList.remove('hidden');
-      el.beamStageTitle.textContent = 'Beaming Encrypted File via ShareKro...';
+      el.beamStageTitle.textContent = 'Turbo Beaming Encrypted File via ShareKro...';
       el.activeTransferMetrics.classList.remove('hidden');
       el.metricFileBadge.textContent = meta.label;
       el.metricFileBadge.className = `px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.bg} ${meta.color} ${meta.border}`;
@@ -2776,28 +3281,39 @@
         mime: file.type || 'application/octet-stream',
       }));
 
-      // 2. Stream 64KB chunks with bufferedAmount flow control
+      // 2. Double-Buffered Read-Ahead Pipeline: prefetch next 256KB chunk while WebRTC transmits current chunk
       const startTime = performance.now();
       let offset = 0;
       let lastUiUpdate = 0;
 
       try {
-        while (offset < file.size) {
+        let nextReadPromise = file.size > 0
+          ? file.slice(0, Math.min(chunkSize, file.size)).arrayBuffer()
+          : null;
+
+        while (offset < file.size && nextReadPromise) {
           if (!state.connected || !state.conn.open) {
             throw new Error('Peer disconnected mid-transfer');
           }
 
+          // Await already-prefetched current chunk
+          const buffer = await nextReadPromise;
+          offset += buffer.byteLength;
+
+          // Immediately prefetch the next chunk in parallel with network transmission
+          nextReadPromise = offset < file.size
+            ? file.slice(offset, Math.min(offset + chunkSize, file.size)).arrayBuffer()
+            : null;
+
+          // Only yield when the 12MB SCTP pipeline buffer is full
           if (dc && dc.bufferedAmount > MAX_BUFFERED_AMOUNT) {
             await waitForBufferDrain(dc);
           }
 
-          const slice = file.slice(offset, offset + CHUNK_SIZE);
-          const buffer = await slice.arrayBuffer();
           state.conn.send(buffer);
-          offset += buffer.byteLength;
 
           const now = performance.now();
-          if (now - lastUiUpdate > 75 || offset >= file.size) {
+          if (now - lastUiUpdate > 65 || offset >= file.size) {
             lastUiUpdate = now;
             updateMetricsUi(offset, file.size, startTime);
           }
@@ -3172,59 +3688,517 @@
     }
 
     /* =========================================================================
+       10B. OPTIONAL E2EE ACCOUNT VAULT (WEB CRYPTO AES-256-GCM + INDEXEDDB)
+            & FUTURISTIC CAR LOGIN ANIMATION
+    ========================================================================= */
+    const VAULT_DB_NAME = 'ShareKroE2EEVaultDB';
+    const VAULT_DB_VERSION = 1;
+    let vaultDbPromise = null;
+
+    function openVaultDB() {
+      if (vaultDbPromise) return vaultDbPromise;
+      vaultDbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(VAULT_DB_NAME, VAULT_DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('accounts')) {
+            db.createObjectStore('accounts', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('files')) {
+            const store = db.createObjectStore('files', { keyPath: 'id' });
+            store.createIndex('ownerId', 'ownerId', { unique: false });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return vaultDbPromise;
+    }
+
+    function idbReq(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function deriveVaultKey(email, password) {
+      const enc = new TextEncoder();
+      const saltBuf = await crypto.subtle.digest('SHA-256', enc.encode('sharekro-e2ee-salt:' + email.toLowerCase()));
+      const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: new Uint8Array(saltBuf), iterations: 120000, hash: 'SHA-256' },
+        baseKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function hashAccountVerifier(email, password) {
+      const enc = new TextEncoder();
+      const buf = await crypto.subtle.digest('SHA-256', enc.encode('sharekro-verifier:' + email.toLowerCase() + ':' + password));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function encryptArrayBuffer(key, arrayBuffer) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, arrayBuffer);
+      return { iv: Array.from(iv), ciphertext };
+    }
+
+    async function decryptArrayBuffer(key, ivArray, ciphertext) {
+      const iv = new Uint8Array(ivArray);
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    }
+
+    // Play the Futuristic Neon Supercar Launch Animation on Successful Login!
+    function playCarLoginAnimation(displayName) {
+      el.carWelcomeTitle.innerHTML = `Welcome, <span class="text-gradient">${escapeHtml(displayName)}</span>!`;
+
+      // Restart CSS keyframe sequence cleanly by cloning the animated car stage
+      const wrapper = el.carStageWrapper;
+      const cloned = wrapper.cloneNode(true);
+      wrapper.parentNode.replaceChild(cloned, wrapper);
+      el.carStageWrapper = cloned;
+
+      el.carLoginOverlay.classList.remove('closing');
+      el.carLoginOverlay.classList.add('active');
+      playChime('car');
+      triggerConfettiBurst();
+
+      setTimeout(() => {
+        el.carLoginOverlay.classList.add('closing');
+        setTimeout(() => {
+          el.carLoginOverlay.classList.remove('active', 'closing');
+        }, 440);
+      }, 2850);
+    }
+
+    function openAuthModal(defaultTab = 'login') {
+      setAuthModalTab(defaultTab);
+      el.authFormError.classList.add('hidden');
+      el.authPasswordInput.value = '';
+      el.authModal.classList.remove('hidden');
+      el.authModal.classList.add('flex');
+      setTimeout(() => el.authEmailInput.focus(), 80);
+    }
+
+    function closeAuthModal() {
+      el.authModal.classList.add('hidden');
+      el.authModal.classList.remove('flex');
+    }
+
+    function setAuthModalTab(tab) {
+      state.authMode = tab;
+      el.authFormError.classList.add('hidden');
+      if (tab === 'signup') {
+        el.authTabSignup.className = 'py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-md';
+        el.authTabLogin.className = 'py-2 rounded-xl text-xs font-bold transition cursor-pointer text-slate-400 hover:text-white';
+        el.authNameWrap.classList.remove('hidden');
+        el.authSubmitBtn.textContent = 'Create Encrypted ID & Launch';
+      } else {
+        el.authTabLogin.className = 'py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-md';
+        el.authTabSignup.className = 'py-2 rounded-xl text-xs font-bold transition cursor-pointer text-slate-400 hover:text-white';
+        el.authNameWrap.classList.add('hidden');
+        el.authSubmitBtn.textContent = 'Login & Unlock Vault';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = el.authEmailInput.value.trim().toLowerCase();
+      const password = el.authPasswordInput.value;
+      const nameInput = el.authNameInput.value.trim();
+
+      el.authFormError.classList.add('hidden');
+      if (!email || password.length < 4) {
+        el.authFormError.textContent = 'Please enter your Account ID/Email and a password (min 4 characters).';
+        el.authFormError.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const db = await openVaultDB();
+        const verifier = await hashAccountVerifier(email, password);
+        const tx = db.transaction('accounts', 'readwrite');
+        const store = tx.objectStore('accounts');
+        const existing = await idbReq(store.get(email));
+
+        let accountRecord = existing;
+        if (state.authMode === 'signup') {
+          if (existing) {
+            el.authFormError.textContent = 'An account with this ID already exists. Please switch to Login.';
+            el.authFormError.classList.remove('hidden');
+            return;
+          }
+          accountRecord = {
+            id: email,
+            email,
+            name: nameInput || email.split('@')[0],
+            verifier,
+            createdAt: Date.now(),
+          };
+          await idbReq(store.put(accountRecord));
+        } else {
+          if (!existing) {
+            el.authFormError.textContent = 'Account not found. Click "Create Free ID" to register in 2 seconds!';
+            el.authFormError.classList.remove('hidden');
+            return;
+          }
+          if (existing.verifier !== verifier) {
+            el.authFormError.textContent = 'Incorrect E2EE password. Please try again.';
+            el.authFormError.classList.remove('hidden');
+            return;
+          }
+        }
+
+        const key = await deriveVaultKey(email, password);
+        state.user = { id: accountRecord.id, email: accountRecord.email, name: accountRecord.name };
+        state.vaultKey = key;
+
+        closeAuthModal();
+        updateAuthUi();
+        await loadVaultFiles();
+        switchMode('vault');
+        playCarLoginAnimation(state.user.name);
+        showToast(`Logged in as ${state.user.name} · E2EE Vault Ready!`, 'success');
+      } catch (err) {
+        console.error('Auth error:', err);
+        el.authFormError.textContent = 'Unable to unlock encrypted vault in this browser context.';
+        el.authFormError.classList.remove('hidden');
+      }
+    }
+
+    function logoutAccount() {
+      state.user = null;
+      state.vaultKey = null;
+      state.vaultFiles = [];
+      updateAuthUi();
+      renderVaultList();
+      showToast('Signed out securely. Your E2EE key was cleared from memory.', 'info');
+    }
+
+    function updateAuthUi() {
+      if (state.user) {
+        el.authHeaderLabel.textContent = state.user.name;
+        el.authHeaderBtn.className = 'magnetic-btn px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer';
+        el.logoutHeaderBtn.classList.remove('hidden');
+        el.vaultGuestView.classList.add('hidden');
+        el.vaultLoggedInView.classList.remove('hidden');
+        el.vaultLoggedInView.classList.add('flex');
+        el.vaultOwnerTitle.textContent = `${state.user.name}'s Encrypted Vault`;
+      } else {
+        el.authHeaderLabel.textContent = 'Login';
+        el.authHeaderBtn.className = 'magnetic-btn px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/40 text-cyan-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer';
+        el.logoutHeaderBtn.classList.add('hidden');
+        el.vaultGuestView.classList.remove('hidden');
+        el.vaultLoggedInView.classList.add('hidden');
+        el.vaultLoggedInView.classList.remove('flex');
+        el.vaultCountPill.classList.add('hidden');
+      }
+    }
+
+    async function saveFilesToVault(fileList) {
+      if (!state.user || !state.vaultKey) {
+        openAuthModal('login');
+        return;
+      }
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      showToast(`Encrypting ${files.length} file(s) with AES-256-GCM...`, 'info');
+      try {
+        const db = await openVaultDB();
+        for (const file of files) {
+          const rawBuffer = await file.arrayBuffer();
+          const { iv, ciphertext } = await encryptArrayBuffer(state.vaultKey, rawBuffer);
+          const record = {
+            id: 'vf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+            ownerId: state.user.id,
+            name: file.name,
+            size: file.size,
+            mime: file.type || 'application/octet-stream',
+            iv,
+            ciphertext,
+            savedAt: Date.now(),
+          };
+          const tx = db.transaction('files', 'readwrite');
+          await idbReq(tx.objectStore('files').put(record));
+        }
+
+        await loadVaultFiles();
+        showCompletionCelebration('Saved to E2EE Vault!', `${files.length} file(s) encrypted & stored in your account`);
+      } catch (err) {
+        console.error('Vault save error:', err);
+        showToast('Could not encrypt/save file to vault.', 'error');
+      }
+    }
+
+    async function loadVaultFiles() {
+      if (!state.user) return;
+      try {
+        const db = await openVaultDB();
+        const tx = db.transaction('files', 'readonly');
+        const idx = tx.objectStore('files').index('ownerId');
+        const all = await idbReq(idx.getAll(state.user.id));
+        // Store lightweight metadata in memory; fetch ciphertext on demand when sending/downloading
+        state.vaultFiles = (all || [])
+          .map((r) => ({ id: r.id, name: r.name, size: r.size, mime: r.mime, savedAt: r.savedAt }))
+          .sort((a, b) => b.savedAt - a.savedAt);
+        renderVaultList();
+      } catch (err) {
+        console.error('Vault load error:', err);
+      }
+    }
+
+    async function decryptVaultFileRecord(fileId) {
+      if (!state.user || !state.vaultKey) throw new Error('Vault locked');
+      const db = await openVaultDB();
+      const tx = db.transaction('files', 'readonly');
+      const rec = await idbReq(tx.objectStore('files').get(fileId));
+      if (!rec) throw new Error('File not found');
+      const decryptedBuffer = await decryptArrayBuffer(state.vaultKey, rec.iv, rec.ciphertext);
+      const blob = new Blob([decryptedBuffer], { type: rec.mime });
+      const file = new File([blob], rec.name, { type: rec.mime });
+      return { rec, blob, file };
+    }
+
+    async function sendVaultFileViaP2P(fileId) {
+      try {
+        showToast('Decrypting file from E2EE Vault...', 'info');
+        const { file } = await decryptVaultFileRecord(fileId);
+        enqueueFiles([file]);
+        if (!state.connected) {
+          switchMode('send');
+          showToast(`"${file.name}" queued! Share your Room Code to beam it.`, 'success');
+        }
+      } catch (err) {
+        console.error('Vault P2P send error:', err);
+        showToast('Failed to decrypt file from vault.', 'error');
+      }
+    }
+
+    async function previewVaultFile(fileId) {
+      try {
+        const { rec, blob } = await decryptVaultFileRecord(fileId);
+        const meta = getFileTypeMeta(rec.name, rec.mime);
+        const blobUrl = URL.createObjectURL(blob);
+        openFilePreview({ name: rec.name, size: rec.size, mime: rec.mime, blobUrl, fileBlob: blob }, meta);
+      } catch (err) {
+        showToast('Failed to decrypt file preview.', 'error');
+      }
+    }
+
+    async function downloadVaultFile(fileId) {
+      try {
+        const { rec, blob } = await decryptVaultFileRecord(fileId);
+        const url = URL.createObjectURL(blob);
+        triggerDownload(url, rec.name);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        showToast(`Decrypted & downloaded "${rec.name}"`, 'success');
+      } catch (err) {
+        showToast('Failed to decrypt file for download.', 'error');
+      }
+    }
+
+    async function deleteVaultFile(fileId) {
+      try {
+        const db = await openVaultDB();
+        const tx = db.transaction('files', 'readwrite');
+        await idbReq(tx.objectStore('files').delete(fileId));
+        await loadVaultFiles();
+        showToast('File permanently removed from your E2EE Vault.', 'info');
+      } catch (err) {
+        showToast('Could not delete file.', 'error');
+      }
+    }
+
+    function renderVaultList() {
+      const query = (el.vaultSearchInput.value || '').trim().toLowerCase();
+      const filtered = state.vaultFiles.filter((f) => f.name.toLowerCase().includes(query));
+      const totalBytes = state.vaultFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+
+      el.vaultStatsText.textContent = `${state.vaultFiles.length} file(s) saved · ${formatBytes(totalBytes)} encrypted with AES-256-GCM`;
+      if (state.user) {
+        el.vaultCountPill.textContent = state.vaultFiles.length;
+        el.vaultCountPill.classList.remove('hidden');
+      }
+
+      el.vaultFileList.innerHTML = '';
+      if (!filtered.length) {
+        el.vaultEmptyState.classList.remove('hidden');
+        return;
+      }
+      el.vaultEmptyState.classList.add('hidden');
+
+      filtered.forEach((item) => {
+        const meta = getFileTypeMeta(item.name, item.mime);
+        const canPreview = meta.kind === 'image' || meta.kind === 'text';
+        const card = document.createElement('div');
+        card.className = 'glass-card-inner rounded-2xl p-3.5 flex flex-col gap-3 hover:border-cyan-400/35 transition';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2.5">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl ${meta.bg} border ${meta.border} flex items-center justify-center text-lg shrink-0">
+                ${meta.icon}
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs sm:text-sm font-semibold text-white truncate" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</p>
+                <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                  <span class="text-[11px] font-mono text-slate-400">${formatBytes(item.size)}</span>
+                  <span class="text-[10px] font-bold ${meta.color}">${meta.label}</span>
+                  <span class="text-[10px] font-mono text-emerald-300/90">🔒 AES-256</span>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="vault-del-btn p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 text-rose-300 transition cursor-pointer shrink-0" title="Delete from Vault">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="vault-send-btn flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-cyan-500/25 to-violet-500/25 hover:from-cyan-500/40 hover:to-violet-500/40 border border-cyan-400/35 text-cyan-100 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              ⚡ Select & Send P2P
+            </button>
+            ${canPreview ? `
+              <button type="button" class="vault-preview-btn py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600/60 text-slate-200 text-xs font-semibold transition cursor-pointer">
+                Preview
+              </button>
+            ` : ''}
+            <button type="button" class="vault-dl-btn py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-200 text-xs font-semibold transition cursor-pointer">
+              Download
+            </button>
+          </div>
+        `;
+
+        card.querySelector('.vault-send-btn').addEventListener('click', () => sendVaultFileViaP2P(item.id));
+        card.querySelector('.vault-dl-btn').addEventListener('click', () => downloadVaultFile(item.id));
+        card.querySelector('.vault-del-btn').addEventListener('click', () => deleteVaultFile(item.id));
+        const prevBtn = card.querySelector('.vault-preview-btn');
+        if (prevBtn) prevBtn.addEventListener('click', () => previewVaultFile(item.id));
+
+        el.vaultFileList.appendChild(card);
+      });
+    }
+
+    /* =========================================================================
        11. UI EVENT BINDINGS & MODE SWITCHING
     ========================================================================= */
     function switchMode(mode) {
       state.mode = mode;
-      if (mode === 'send') {
-        el.tabSendBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25';
-        el.tabReceiveBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5';
-        el.sendPanel.classList.remove('hidden');
-        el.sendPanel.classList.add('flex');
-        el.receivePanel.classList.add('hidden');
-        el.receivePanel.classList.remove('flex');
+      const activeCls = 'magnetic-btn px-5 sm:px-7 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25';
+      const idleCls = 'magnetic-btn px-5 sm:px-7 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5';
 
-        if (!state.connected && state.role !== 'sender') {
-          createSenderRoom();
-        }
-      } else {
-        el.tabReceiveBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25';
-        el.tabSendBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5';
-        el.receivePanel.classList.remove('hidden');
-        el.receivePanel.classList.add('flex');
-        el.sendPanel.classList.add('hidden');
-        el.sendPanel.classList.remove('flex');
+      el.tabSendBtn.className = mode === 'send' ? activeCls : idleCls;
+      el.tabReceiveBtn.className = mode === 'receive' ? activeCls : idleCls;
+      el.tabVaultBtn.className = mode === 'vault' ? activeCls : idleCls;
+
+      el.sendPanel.classList.toggle('hidden', mode !== 'send');
+      el.sendPanel.classList.toggle('flex', mode === 'send');
+      el.receivePanel.classList.toggle('hidden', mode !== 'receive');
+      el.receivePanel.classList.toggle('flex', mode === 'receive');
+      el.vaultPanel.classList.toggle('hidden', mode !== 'vault');
+      el.vaultPanel.classList.toggle('flex', mode === 'vault');
+
+      if (mode === 'send' && !state.connected && state.role !== 'sender') {
+        createSenderRoom();
       }
     }
 
     el.tabSendBtn.addEventListener('click', () => switchMode('send'));
     el.tabReceiveBtn.addEventListener('click', () => switchMode('receive'));
+    el.tabVaultBtn.addEventListener('click', () => switchMode('vault'));
     el.demoTransferBtn.addEventListener('click', runDemoTransfer);
 
+    // Optional Login / Account Vault Event Bindings
+    el.authHeaderBtn.addEventListener('click', () => {
+      if (state.user) {
+        switchMode('vault');
+      } else {
+        openAuthModal('login');
+      }
+    });
+    el.logoutHeaderBtn.addEventListener('click', logoutAccount);
+    el.vaultOpenLoginBtn.addEventListener('click', () => openAuthModal('login'));
+    el.authModalClose.addEventListener('click', closeAuthModal);
+    el.authGuestBtn.addEventListener('click', closeAuthModal);
+    el.authModal.addEventListener('click', (e) => {
+      if (e.target === el.authModal) closeAuthModal();
+    });
+    el.authTabLogin.addEventListener('click', () => setAuthModalTab('login'));
+    el.authTabSignup.addEventListener('click', () => setAuthModalTab('signup'));
+    el.authForm.addEventListener('submit', handleAuthSubmit);
+
+    // Vault Upload, Drag & Drop, and Search
+    el.vaultUploadBtn.addEventListener('click', () => el.vaultFileInput.click());
+    el.vaultDropZone.addEventListener('click', () => el.vaultFileInput.click());
+    el.vaultFileInput.addEventListener('change', (e) => {
+      saveFilesToVault(e.target.files);
+      el.vaultFileInput.value = '';
+    });
+    ['dragenter', 'dragover'].forEach((evtName) => {
+      el.vaultDropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.vaultDropZone.classList.add('dropzone-active');
+      });
+    });
+    ['dragleave', 'drop'].forEach((evtName) => {
+      el.vaultDropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.vaultDropZone.classList.remove('dropzone-active');
+      });
+    });
+    el.vaultDropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) {
+        saveFilesToVault(e.dataTransfer.files);
+      }
+    });
+    el.vaultSearchInput.addEventListener('input', renderVaultList);
+
+    // Sound Toggle
+    el.soundToggleBtn.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      el.soundOnIcon.classList.toggle('hidden', !state.soundEnabled);
+      el.soundOffIcon.classList.toggle('hidden', state.soundEnabled);
+      showToast(state.soundEnabled ? 'Sound effects enabled' : 'Sound effects muted', 'info');
+    });
+
+    // Room Management & Pairing Buttons
     el.newRoomBtn.addEventListener('click', () => {
       createSenderRoom();
-      showToast('Fresh ShareKro room created!', 'info');
+      showToast('Generated a fresh ShareKro Room Code!', 'info');
     });
 
     el.copyCodeBtn.addEventListener('click', () => {
-      if (state.roomCode) copyTextToClipboard(state.roomCode, `ShareKro code ${state.roomCode} copied!`);
+      if (state.roomCode) {
+        copyTextToClipboard(state.roomCode, `Room code "${state.roomCode}" copied!`);
+      }
     });
 
     el.copyLinkBtn.addEventListener('click', () => {
       if (state.roomCode) {
         const shareUrl = `${window.location.origin}${window.location.pathname}?room=${state.roomCode}`;
-        copyTextToClipboard(shareUrl, 'ShareKro direct link copied!');
+        copyTextToClipboard(shareUrl, 'Direct ShareKro link copied!');
       }
     });
 
     el.applyPinBtn.addEventListener('click', async () => {
       const pinRaw = el.senderPinInput.value.trim();
-      if (pinRaw && !/^\d{4}$/.test(pinRaw)) {
-        showToast('Please enter a 4-digit numeric PIN (or leave empty to remove).', 'warn');
+      if (!pinRaw) {
+        state.pinHash = null;
+        showToast('Room PIN removed — room is now open.', 'info');
         return;
       }
-      state.pinHash = pinRaw ? await hashPin(pinRaw) : null;
-      showToast(pinRaw ? '4-digit Room PIN lock enabled!' : 'Room PIN lock removed.', 'success');
+      if (!/^\d{4}$/.test(pinRaw)) {
+        showToast('Please enter a 4-digit numeric PIN.', 'warn');
+        return;
+      }
+      state.pinHash = await hashPin(pinRaw);
+      showToast('4-digit Room PIN enabled for incoming peers!', 'success');
     });
 
     el.joinRoomBtn.addEventListener('click', () => initiateJoinRoom(el.joinCodeInput.value));
@@ -3235,32 +4209,33 @@
     el.disconnectBtn.addEventListener('click', () => {
       cleanupConnection();
       updateStatus('Disconnected', 'idle');
-      showToast('Disconnected from ShareKro tunnel.', 'info');
+      showToast('Disconnected from P2P session.', 'info');
       if (state.mode === 'send') {
         createSenderRoom();
       }
     });
 
-    // PIN Modal Controls
+    // PIN Verification Modal Events
     el.pinModalCancel.addEventListener('click', () => {
       el.pinModal.classList.add('hidden');
       el.pinModal.classList.remove('flex');
       cleanupConnection();
-      updateStatus('Ready', 'idle');
+      updateStatus('Cancelled', 'idle');
     });
 
-    async function submitPinModal() {
-      const entered = el.pinModalInput.value.trim();
-      if (!entered || !state.conn || !state.conn.open) return;
-      const pinHash = await hashPin(entered);
-      state.conn.send(JSON.stringify({ type: 'auth-pin', pinHash }));
+    async function submitReceiverPin() {
+      const pin = el.pinModalInput.value.trim();
+      if (!pin || !state.conn || !state.conn.open) return;
+      const hashed = await hashPin(pin);
+      state.conn.send(JSON.stringify({ type: 'auth-pin', pinHash: hashed }));
     }
-    el.pinModalSubmit.addEventListener('click', submitPinModal);
+
+    el.pinModalSubmit.addEventListener('click', submitReceiverPin);
     el.pinModalInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitPinModal();
+      if (e.key === 'Enter') submitReceiverPin();
     });
 
-    // Preview Modal Close
+    // File Preview Modal Events
     el.previewModalClose.addEventListener('click', () => {
       el.previewModal.classList.add('hidden');
       el.previewModal.classList.remove('flex');
@@ -3272,15 +4247,7 @@
       }
     });
 
-    // Sound Toggle
-    el.soundToggleBtn.addEventListener('click', () => {
-      state.soundEnabled = !state.soundEnabled;
-      el.soundOnIcon.classList.toggle('hidden', !state.soundEnabled);
-      el.soundOffIcon.classList.toggle('hidden', state.soundEnabled);
-      showToast(state.soundEnabled ? 'Completion chime enabled' : 'Sound muted', 'info');
-    });
-
-    // Drag & Drop + File & Folder Pickers
+    // Main Dropzone, File Picker & Folder Picker Events
     el.dropZone.addEventListener('click', () => el.fileInput.click());
     el.browseFolderBtn.addEventListener('click', () => el.folderInput.click());
 
@@ -3294,7 +4261,7 @@
       el.folderInput.value = '';
     });
 
-    ['dragenter', 'dragover'].forEach(evtName => {
+    ['dragenter', 'dragover'].forEach((evtName) => {
       el.dropZone.addEventListener(evtName, (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3302,7 +4269,7 @@
       });
     });
 
-    ['dragleave', 'drop'].forEach(evtName => {
+    ['dragleave', 'drop'].forEach((evtName) => {
       el.dropZone.addEventListener(evtName, (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3316,43 +4283,42 @@
       }
     });
 
-    // Quick Text Share
+    // Quick Text / Clipboard Share
     el.sendTextBtn.addEventListener('click', sendQuickText);
     el.quickTextInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') sendQuickText();
     });
 
-    // Clear Log
+    // Clear Transfer Log
     el.clearLogBtn.addEventListener('click', () => {
       el.transferLogList.innerHTML = '';
       state.logCount = 0;
       el.logCountBadge.textContent = '0';
-      el.emptyLogState.classList.remove('hidden');
       el.clearLogBtn.classList.add('hidden');
+      el.emptyLogState.classList.remove('hidden');
     });
 
     /* =========================================================================
-       12. BOOTSTRAP ON WINDOW LOAD
+       12. APPLICATION BOOTSTRAP (ALL ANIMATIONS + AUTO-JOIN VIA ?room=CODE)
     ========================================================================= */
-    window.addEventListener('load', () => {
+    window.onload = function () {
+      // Launch all original 60fps cursor, neon ribbon, constellation, scroll & magnetic animations
       initBackgroundCanvas();
       initCustomCursor();
       initScrollAndParallax();
       initInteractiveElements();
 
-      // Auto-join if ?room=CODE is present in URL (QR scan or shared link)
+      // Auto-join if opened via a direct ShareKro ?room=XXXXXX link or QR scan
       const params = new URLSearchParams(window.location.search);
-      const urlRoom = params.get('room');
-
-      if (urlRoom && urlRoom.trim().length >= 6) {
+      const roomParam = (params.get('room') || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+      if (roomParam.length === 6) {
         switchMode('receive');
-        el.joinCodeInput.value = urlRoom.trim().toUpperCase().slice(0, 6);
-        initiateJoinRoom(urlRoom);
+        el.joinCodeInput.value = roomParam;
+        initiateJoinRoom(roomParam);
       } else {
-        switchMode('send');
         createSenderRoom();
       }
-    });
+    };
   </script>
 </body>
 </html>

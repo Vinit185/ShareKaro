@@ -1,0 +1,3358 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ShareKro — Instant Encrypted P2P File Sharing</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PeerJS CDN for Zero-Login Public WebRTC P2P Connections -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <!-- QRCode.js CDN for Instant Mobile Pairing QR Codes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: '#050816',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #050816;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Hide native cursor on fine-pointer desktop devices when custom cursor is active */
+    @media (hover: hover) and (pointer: fine) {
+      body.custom-cursor-enabled,
+      body.custom-cursor-enabled * {
+        cursor: none !important;
+      }
+    }
+
+    /* Top Glowing Neon Scroll-Progress Bar */
+    #scrollProgressBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      z-index: 80;
+      background: linear-gradient(90deg, #00f2fe 0%, #7b2ff7 50%, #ff2a85 80%, #00e676 100%);
+      box-shadow: 0 0 14px rgba(0, 242, 254, 0.85), 0 0 28px rgba(123, 47, 247, 0.55);
+      pointer-events: none;
+      transition: width 0.06s linear;
+    }
+
+    /* Drifting Parallax Aurora Orbs */
+    #auroraLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .aurora-orb {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(95px);
+      opacity: 0.24;
+      will-change: transform;
+      animation: auroraDrift 18s ease-in-out infinite alternate;
+    }
+
+    .aurora-orb-1 {
+      width: 44vw;
+      height: 44vw;
+      max-width: 560px;
+      max-height: 560px;
+      top: -12%;
+      left: -8%;
+      background: radial-gradient(circle, #00f2fe 0%, rgba(123, 47, 247, 0.35) 60%, transparent 100%);
+    }
+
+    .aurora-orb-2 {
+      width: 48vw;
+      height: 48vw;
+      max-width: 620px;
+      max-height: 620px;
+      top: 28%;
+      right: -12%;
+      background: radial-gradient(circle, #7b2ff7 0%, rgba(255, 42, 133, 0.35) 60%, transparent 100%);
+      animation-delay: -6s;
+      animation-duration: 22s;
+    }
+
+    .aurora-orb-3 {
+      width: 40vw;
+      height: 40vw;
+      max-width: 500px;
+      max-height: 500px;
+      bottom: -14%;
+      left: 26%;
+      background: radial-gradient(circle, #00e676 0%, rgba(0, 242, 254, 0.3) 60%, transparent 100%);
+      animation-delay: -11s;
+      animation-duration: 25s;
+    }
+
+    @keyframes auroraDrift {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(38px, -26px, 0) scale(1.1); }
+      100% { transform: translate3d(-28px, 34px, 0) scale(0.94); }
+    }
+
+    /* Multi-Layer Custom Cursor (Desktop Pointer Only) */
+    #customCursorLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      pointer-events: none;
+      display: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      body.custom-cursor-enabled #customCursorLayer {
+        display: block;
+      }
+    }
+
+    #cursorDot {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 9px;
+      height: 9px;
+      margin: -4.5px 0 0 -4.5px;
+      border-radius: 9999px;
+      background: #00f2fe;
+      box-shadow: 0 0 12px #00f2fe, 0 0 24px #7b2ff7;
+      will-change: transform;
+      transition: background 0.2s ease, transform 0.15s ease, width 0.2s ease, height 0.2s ease;
+    }
+
+    #cursorRing {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 42px;
+      height: 42px;
+      margin: -21px 0 0 -21px;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(0, 242, 254, 0.72);
+      background: rgba(0, 242, 254, 0.04);
+      box-shadow: 0 0 18px rgba(0, 242, 254, 0.28), inset 0 0 12px rgba(123, 47, 247, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+      transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  height 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  margin 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 0.25s ease,
+                  background 0.25s ease,
+                  box-shadow 0.25s ease;
+    }
+
+    #cursorRing.cursor-morph {
+      width: 68px;
+      height: 68px;
+      margin: -34px 0 0 -34px;
+      border-color: rgba(255, 42, 133, 0.9);
+      background: rgba(123, 47, 247, 0.16);
+      box-shadow: 0 0 28px rgba(255, 42, 133, 0.45), inset 0 0 18px rgba(0, 242, 254, 0.22);
+    }
+
+    #cursorRing.cursor-morph-drop {
+      width: 82px;
+      height: 82px;
+      margin: -41px 0 0 -41px;
+      border-color: rgba(0, 230, 118, 0.95);
+      border-style: dashed;
+      background: rgba(0, 230, 118, 0.14);
+      box-shadow: 0 0 32px rgba(0, 230, 118, 0.45);
+    }
+
+    #cursorRing.cursor-pressed {
+      transform: scale(0.84);
+    }
+
+    #cursorLabel {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #ffffff;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      text-shadow: 0 0 10px rgba(0, 242, 254, 0.9);
+    }
+
+    #cursorRing.cursor-morph #cursorLabel,
+    #cursorRing.cursor-morph-drop #cursorLabel {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Continuously Orbiting Micro-Satellites on the Outer Cursor Ring */
+    .cursor-orbit {
+      position: absolute;
+      inset: -4px;
+      border-radius: 9999px;
+      animation: orbitSpin 3.2s linear infinite;
+      pointer-events: none;
+    }
+
+    .cursor-sat {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 9999px;
+    }
+
+    .cursor-sat-1 {
+      top: -2px;
+      left: 50%;
+      margin-left: -2.5px;
+      background: #00f2fe;
+      box-shadow: 0 0 10px #00f2fe;
+    }
+
+    .cursor-sat-2 {
+      bottom: -2px;
+      left: 50%;
+      margin-left: -2.5px;
+      background: #ff2a85;
+      box-shadow: 0 0 10px #ff2a85;
+    }
+
+    @keyframes orbitSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Full-screen interactive cursor, neon ribbon & warp constellation canvas */
+    #bgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Full-screen celebratory confetti & sparkle canvas */
+    #fxCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 60;
+      pointer-events: none;
+    }
+
+    /* Cyber-glass panels with Radial Cursor Spotlight & 3D Tilt */
+    .glass-panel {
+      position: relative;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.74), rgba(9, 14, 30, 0.86));
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 22px 55px -18px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .spotlight-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        420px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
+        rgba(0, 242, 254, 0.14),
+        rgba(123, 47, 247, 0.07) 40%,
+        transparent 75%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .spotlight-card::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: radial-gradient(
+        300px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
+        rgba(0, 242, 254, 0.8),
+        rgba(255, 42, 133, 0.45) 45%,
+        transparent 75%
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .spotlight-card:hover::before,
+    .spotlight-card:hover::after {
+      opacity: 1;
+    }
+
+    .spotlight-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .glass-card-inner {
+      background: rgba(15, 23, 42, 0.58);
+      border: 1px solid rgba(148, 163, 184, 0.13);
+    }
+
+    /* Magnetic Button Smooth Transition */
+    .magnetic-btn {
+      will-change: transform;
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, filter 0.22s ease;
+    }
+
+    /* Neon gradient brand text */
+    .text-gradient {
+      background: linear-gradient(135deg, #00f2fe 0%, #7b2ff7 45%, #ff2a85 75%, #00e676 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 6s linear infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* Floating 3D Hero File-Type Pills */
+    @keyframes floatBob {
+      0%, 100% { transform: translateY(0px) rotate(var(--rot, 0deg)); }
+      50% { transform: translateY(-14px) rotate(calc(var(--rot, 0deg) + 4deg)); }
+    }
+
+    .hero-pill {
+      animation: floatBob var(--float-dur, 5.5s) ease-in-out infinite;
+      animation-delay: var(--float-delay, 0s);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Radar Sonar Ring around Live P2P Status Badge */
+    @keyframes sonarPing {
+      0% { transform: scale(0.95); opacity: 0.75; }
+      80%, 100% { transform: scale(1.65); opacity: 0; }
+    }
+
+    .sonar-ring {
+      position: absolute;
+      inset: -3px;
+      border-radius: 9999px;
+      border: 1.5px solid rgba(0, 242, 254, 0.55);
+      animation: sonarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+      pointer-events: none;
+    }
+
+    /* Scroll-Triggered Reveal Animations */
+    .reveal {
+      opacity: 0;
+      will-change: transform, opacity;
+      transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .reveal[data-reveal="fade-up"] { transform: translate3d(0, 36px, 0); }
+    .reveal[data-reveal="scale-in"] { transform: scale(0.9) translate3d(0, 22px, 0); }
+    .reveal[data-reveal="slide-left"] { transform: translate3d(-44px, 0, 0); }
+    .reveal[data-reveal="slide-right"] { transform: translate3d(44px, 0, 0); }
+    .reveal[data-reveal="tilt-in"] { transform: perspective(900px) rotateX(12deg) translate3d(0, 34px, 0); }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Infinite Dual-Row Kinetic File-Format Marquee */
+    @keyframes marqueeLeft {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    @keyframes marqueeRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+
+    .marquee-track-left {
+      display: flex;
+      width: max-content;
+      animation: marqueeLeft 28s linear infinite;
+    }
+
+    .marquee-track-right {
+      display: flex;
+      width: max-content;
+      animation: marqueeRight 32s linear infinite;
+    }
+
+    .marquee-wrapper:hover .marquee-track-left,
+    .marquee-wrapper:hover .marquee-track-right {
+      animation-play-state: paused;
+    }
+
+    .marquee-chip {
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .marquee-chip:hover {
+      transform: translateY(-4px) scale(1.06);
+      box-shadow: 0 0 24px rgba(0, 242, 254, 0.35);
+      border-color: rgba(0, 242, 254, 0.7) !important;
+    }
+
+    /* Flowing SVG Pipeline Dash Animation */
+    @keyframes svgFlow {
+      0% { stroke-dashoffset: 48; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    .pipeline-flow-line {
+      stroke-dasharray: 8 8;
+      animation: svgFlow 1.4s linear infinite;
+    }
+
+    /* Animated Logo Orbit */
+    @keyframes logoPulse {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(0, 242, 254, 0.55)); }
+      50% { filter: drop-shadow(0 0 14px rgba(255, 42, 133, 0.8)); }
+    }
+
+    .logo-animated {
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    /* Drag & Drop active glow */
+    .dropzone-active {
+      border-color: #22d3ee !important;
+      background: rgba(34, 211, 238, 0.09) !important;
+      box-shadow: 0 0 38px rgba(34, 211, 238, 0.25), inset 0 0 24px rgba(34, 211, 238, 0.1);
+      transform: scale(1.01);
+    }
+
+    /* Encrypted Data Beam Tunnel Animations */
+    @keyframes beamFlow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    .beam-tunnel {
+      background: linear-gradient(90deg,
+        rgba(34, 211, 238, 0.18) 0%,
+        rgba(34, 211, 238, 0.92) 25%,
+        rgba(167, 139, 250, 0.96) 50%,
+        rgba(52, 211, 153, 0.92) 75%,
+        rgba(34, 211, 238, 0.18) 100%
+      );
+      background-size: 200% 100%;
+      animation: beamFlow 1.25s linear infinite;
+      box-shadow: 0 0 22px rgba(34, 211, 238, 0.6);
+    }
+
+    .beam-tunnel-idle {
+      background: linear-gradient(90deg,
+        rgba(139, 92, 246, 0.14) 0%,
+        rgba(34, 211, 238, 0.45) 50%,
+        rgba(139, 92, 246, 0.14) 100%
+      );
+      background-size: 200% 100%;
+      animation: beamFlow 3.4s linear infinite;
+    }
+
+    @keyframes packetLaunch {
+      0% {
+        left: 4%;
+        opacity: 0;
+        transform: translateY(-50%) scale(0.65);
+      }
+      14% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.06);
+      }
+      84% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+      }
+      100% {
+        left: 92%;
+        opacity: 0;
+        transform: translateY(-50%) scale(0.65);
+      }
+    }
+
+    .beam-packet {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      animation: packetLaunch var(--dur, 1.25s) cubic-bezier(0.35, 0.05, 0.25, 1) forwards;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Node Pulse Ring */
+    @keyframes nodePulse {
+      0% { transform: scale(0.95); opacity: 0.75; }
+      70% { transform: scale(1.4); opacity: 0; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    .node-ring {
+      animation: nodePulse 1.9s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    /* Shockwave Ripple around Completed File Card */
+    @keyframes cardShockwave {
+      0% {
+        box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.8), inset 0 0 22px rgba(52, 211, 153, 0.35);
+        border-color: rgba(52, 211, 153, 0.95);
+      }
+      60% {
+        box-shadow: 0 0 0 18px rgba(52, 211, 153, 0), inset 0 0 10px rgba(52, 211, 153, 0.12);
+        border-color: rgba(52, 211, 153, 0.5);
+      }
+      100% {
+        box-shadow: 0 0 0 26px rgba(52, 211, 153, 0);
+        border-color: rgba(148, 163, 184, 0.14);
+      }
+    }
+
+    .animate-shockwave {
+      animation: cardShockwave 1.25s ease-out forwards;
+    }
+
+    /* Morphing SVG Checkmark Animation */
+    @keyframes drawCircle {
+      0% { stroke-dashoffset: 166; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    @keyframes drawCheck {
+      0% { stroke-dashoffset: 48; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.75); opacity: 0; }
+      65% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .checkmark-circle {
+      stroke-dasharray: 166;
+      stroke-dashoffset: 166;
+      animation: drawCircle 0.55s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark-check {
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      animation: drawCheck 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+    }
+
+    .animate-pop-in {
+      animation: popIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Subtle Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(34, 211, 238, 0.7);
+    }
+
+    /* QR Code container polish */
+    #qrCodeContainer img,
+    #qrCodeContainer canvas {
+      margin: 0 auto;
+      border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Top Neon Scroll-Progress Bar -->
+  <div id="scrollProgressBar"></div>
+
+  <!-- Continuous Parallax Aurora Orbs -->
+  <div id="auroraLayer" aria-hidden="true">
+    <div class="aurora-orb aurora-orb-1" data-parallax="0.14"></div>
+    <div class="aurora-orb aurora-orb-2" data-parallax="-0.12"></div>
+    <div class="aurora-orb aurora-orb-3" data-parallax="0.18"></div>
+  </div>
+
+  <!-- Multi-Layer Custom Cursor (Desktop Pointer Devices) -->
+  <div id="customCursorLayer" aria-hidden="true">
+    <div id="cursorRing">
+      <div class="cursor-orbit">
+        <span class="cursor-sat cursor-sat-1"></span>
+        <span class="cursor-sat cursor-sat-2"></span>
+      </div>
+      <span id="cursorLabel"></span>
+    </div>
+    <div id="cursorDot"></div>
+  </div>
+
+  <!-- Full-Screen Interactive Neon Ribbon, Stardust & Warp Constellation Canvas -->
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- Full-Screen Celebratory Confetti & Sparkle Canvas -->
+  <canvas id="fxCanvas"></canvas>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- Completion Celebration Overlay Banner -->
+  <div id="celebrationBanner" class="fixed inset-x-0 top-20 z-50 flex justify-center pointer-events-none hidden px-4">
+    <div class="glass-panel rounded-2xl px-6 py-4 flex items-center gap-4 border border-emerald-400/45 shadow-[0_0_45px_rgba(16,185,129,0.38)] animate-pop-in">
+      <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+        <svg class="w-12 h-12" viewBox="0 0 56 56" fill="none">
+          <circle class="checkmark-circle" cx="28" cy="28" r="25" stroke="#34d399" stroke-width="3.2" fill="rgba(16,185,129,0.14)" />
+          <path class="checkmark-check" d="M17 28.5L24.5 36L39.5 20.5" stroke="#34d399" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div>
+        <p id="celebrationTitle" class="text-sm sm:text-base font-bold text-emerald-300">Transfer Complete!</p>
+        <p id="celebrationSubtitle" class="text-xs text-slate-300 truncate max-w-[210px] sm:max-w-xs">Shared securely via ShareKro P2P</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-Digit Room PIN Verification Modal -->
+  <div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full border border-violet-400/35 animate-pop-in">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-violet-500/20 border border-violet-400/35 flex items-center justify-center text-violet-300">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">Room PIN Required</h3>
+          <p class="text-xs text-slate-400">Enter the 4-digit PIN set by the sender to unlock ShareKro transfer.</p>
+        </div>
+      </div>
+      <input id="pinModalInput" type="password" inputmode="numeric" maxlength="4" placeholder="• • • •"
+        class="w-full px-4 py-3.5 rounded-2xl bg-slate-900/85 border border-slate-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none text-white font-mono text-center tracking-[0.5em] text-2xl mb-3 transition" />
+      <p id="pinModalError" class="text-xs text-rose-400 mb-3 hidden text-center">Incorrect PIN. Please try again.</p>
+      <div class="flex gap-3">
+        <button id="pinModalCancel" type="button"
+          class="flex-1 py-3 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 font-medium text-sm transition cursor-pointer">
+          Cancel
+        </button>
+        <button id="pinModalSubmit" type="button"
+          class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white font-semibold text-sm shadow-lg shadow-cyan-500/20 transition cursor-pointer">
+          Unlock Room
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Preview Modal (Images & Text Files) -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel rounded-3xl p-4 sm:p-6 max-w-3xl w-full max-h-[88vh] flex flex-col gap-4 border border-cyan-400/30 animate-pop-in">
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h3 id="previewModalTitle" class="text-sm sm:text-base font-bold text-white truncate">File Preview</h3>
+          <p id="previewModalMeta" class="text-xs text-slate-400 font-mono">0 KB</p>
+        </div>
+        <button id="previewModalClose" type="button"
+          class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+          aria-label="Close preview">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div id="previewModalBody" class="flex-1 overflow-auto rounded-2xl bg-slate-950/80 border border-white/5 p-3 flex items-center justify-center min-h-[200px]">
+        <!-- Dynamic image or text content injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Wrapper -->
+  <div class="relative z-10 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="w-full border-b border-white/5 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+        <!-- Custom Animated SVG ShareKro Logo & Brand -->
+        <a href="#top" class="flex items-center gap-2.5 group" data-cursor="HOME">
+          <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-pink-500 p-[1.5px] shadow-lg shadow-cyan-500/30 logo-animated group-hover:scale-105 transition-transform">
+            <div class="w-full h-full rounded-[14px] bg-slate-950 flex items-center justify-center">
+              <!-- Custom ShareKro SVG Emblem (Interconnected High-Speed Nodes + Transfer Arrow) -->
+              <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="skGrad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#00f2fe" />
+                    <stop offset="0.5" stop-color="#7b2ff7" />
+                    <stop offset="1" stop-color="#ff2a85" />
+                  </linearGradient>
+                </defs>
+                <circle cx="8" cy="16" r="3.2" fill="#00f2fe" />
+                <circle cx="24" cy="8.5" r="3.2" fill="#ff2a85" />
+                <circle cx="24" cy="23.5" r="3.2" fill="#00e676" />
+                <path d="M10.8 14.7L21.2 9.8M10.8 17.3L21.2 22.2" stroke="url(#skGrad)" stroke-width="2.4" stroke-linecap="round" />
+                <path d="M16 11L19.5 16L16 21" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg sm:text-xl font-extrabold tracking-tight text-white">Share<span class="text-gradient">Kro</span></span>
+              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">P2P Direct</span>
+            </div>
+            <p class="text-[11px] text-slate-400 hidden sm:block leading-none mt-0.5">Android · iOS · Windows · Mac · Linux</p>
+          </div>
+        </a>
+
+        <!-- Right Header Controls: Demo Button, Radar Status Pill, Sound Toggle -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+          <!-- Built-in Single-Device Animation Demo Button -->
+          <button id="demoTransferBtn" type="button" data-cursor="DEMO" title="Preview ShareKro transfer & celebration animations"
+            class="magnetic-btn px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-violet-500/25 to-pink-500/25 hover:from-violet-500/40 hover:to-pink-500/40 border border-violet-400/45 text-violet-100 text-xs font-semibold flex items-center gap-1.5 shadow-[0_0_20px_rgba(123,47,247,0.3)] cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-pink-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span class="hidden md:inline">Test Animation /</span> Demo
+          </button>
+
+          <!-- Live Connection Status Pill with Pulsing Radar Sonar Ring -->
+          <div class="relative">
+            <span id="statusSonarRing" class="sonar-ring"></span>
+            <div id="connectionPill" class="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/70 text-xs font-medium text-slate-300 transition-all">
+              <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+              <span id="statusText" class="truncate max-w-[105px] sm:max-w-none">Ready</span>
+            </div>
+          </div>
+
+          <!-- Sound Chime Toggle -->
+          <button id="soundToggleBtn" type="button" data-cursor="SOUND" title="Toggle sci-fi sound chimes"
+            class="magnetic-btn p-2.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/70 text-cyan-300 transition cursor-pointer"
+            aria-label="Toggle sound effects">
+            <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <svg id="soundOffIcon" class="w-4 h-4 hidden text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="top" class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-10">
+
+      <!-- SECTION 1: HERO + MAIN SHAREKRO P2P WORKSPACE -->
+      <section class="relative flex flex-col gap-6">
+        <!-- Floating 3D Glassmorphic File-Type Pills in Hero Background -->
+        <div class="pointer-events-none select-none hidden lg:block absolute inset-x-0 -top-2 h-44 overflow-visible z-0" aria-hidden="true">
+          <div class="hero-pill absolute left-2 top-2 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-400/35 text-rose-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: -7deg; --float-dur: 5.2s; --float-delay: 0s;">
+            <span>📄</span> PDF
+          </div>
+          <div class="hero-pill absolute left-14 top-24 px-3 py-1.5 rounded-xl bg-purple-500/15 border border-purple-400/35 text-purple-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: 6deg; --float-dur: 6.1s; --float-delay: -1.4s;">
+            <span>🎬</span> MP4 · 4K
+          </div>
+          <div class="hero-pill absolute left-40 -top-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-400/35 text-emerald-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: -4deg; --float-dur: 5.8s; --float-delay: -2.2s;">
+            <span>📊</span> XLSX
+          </div>
+          <div class="hero-pill absolute right-36 -top-1 px-3 py-1.5 rounded-xl bg-blue-500/15 border border-blue-400/35 text-blue-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: 5deg; --float-dur: 5.5s; --float-delay: -0.9s;">
+            <span>📝</span> DOCX
+          </div>
+          <div class="hero-pill absolute right-4 top-4 px-3 py-1.5 rounded-xl bg-pink-500/15 border border-pink-400/35 text-pink-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: 8deg; --float-dur: 6.4s; --float-delay: -2.8s;">
+            <span>🖼️</span> PNG
+          </div>
+          <div class="hero-pill absolute right-16 top-24 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/35 text-amber-200 text-xs font-mono font-bold flex items-center gap-1.5" style="--rot: -6deg; --float-dur: 5.9s; --float-delay: -1.8s;">
+            <span>📦</span> ZIP
+          </div>
+        </div>
+
+        <!-- Hero & Security Trust Indicators -->
+        <div class="relative z-10 text-center max-w-3xl mx-auto">
+          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            Share Any File Instantly with <span class="text-gradient">ShareKro</span>
+          </h1>
+          <p class="text-sm sm:text-base text-slate-400 mt-2.5">
+            Direct peer-to-peer WebRTC sharing between Android, iOS, laptops & desktops. Photos, 4K videos, Word, Excel, PDFs, APKs & huge files — zero login, zero cloud storage.
+          </p>
+
+          <!-- Trust Badges -->
+          <div class="flex flex-wrap items-center justify-center gap-2 mt-4">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              DTLS End-to-End Encrypted
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              No Login / Zero Signup
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-300 border border-violet-500/25">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+              64KB Chunked Streaming
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-pink-500/10 text-pink-300 border border-pink-500/25">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-12.728 12.728M6.343 6.343A8 8 0 1 0 17.657 17.657 8 8 0 0 0 6.343 6.343z"/></svg>
+              Zero Server Storage
+            </span>
+          </div>
+        </div>
+
+        <!-- Mode Switcher (Send Files / Receive Files) -->
+        <div class="relative z-10 flex justify-center">
+          <div class="glass-panel p-1.5 rounded-2xl inline-flex items-center gap-1.5">
+            <button id="tabSendBtn" type="button" data-cursor="SEND"
+              class="magnetic-btn px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Send Files
+            </button>
+            <button id="tabReceiveBtn" type="button" data-cursor="RECEIVE"
+              class="magnetic-btn px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Receive Files
+            </button>
+          </div>
+        </div>
+
+        <!-- Animated "Encrypted Data Beam" Visualizer Stage -->
+        <div id="beamStage" class="glass-panel spotlight-card rounded-3xl p-5 sm:p-6 border border-cyan-400/25 hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_#34d399]"></span>
+              <h3 id="beamStageTitle" class="text-sm sm:text-base font-bold text-white">ShareKro Encrypted Data Beam Active</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="activeRoomBadge" class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                ROOM: ------
+              </span>
+              <button id="disconnectBtn" type="button" data-cursor="END"
+                class="magnetic-btn px-3 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/30 text-rose-300 text-xs font-semibold transition cursor-pointer">
+                Disconnect
+              </button>
+            </div>
+          </div>
+
+          <!-- Sender Node <-> Neon Beam Tunnel <-> Receiver Node -->
+          <div class="relative flex items-center justify-between gap-3 sm:gap-5 py-3">
+            <!-- Left Node (Sender) -->
+            <div class="relative z-10 flex flex-col items-center gap-1.5 shrink-0">
+              <div class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-cyan-500/15 border border-cyan-400/45 flex items-center justify-center text-cyan-300 shadow-[0_0_25px_rgba(34,211,238,0.28)]">
+                <span id="senderPulseRing" class="node-ring absolute inset-0 rounded-2xl border-2 border-cyan-400 hidden"></span>
+                <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <span id="leftNodeLabel" class="text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">Sender</span>
+            </div>
+
+            <!-- Beam Tunnel & Flying Packets Layer -->
+            <div class="relative flex-1 h-12 flex items-center overflow-hidden">
+              <div id="beamTunnelLine" class="w-full h-1.5 rounded-full beam-tunnel-idle"></div>
+              <div id="beamPacketsLayer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            </div>
+
+            <!-- Right Node (Receiver) -->
+            <div class="relative z-10 flex flex-col items-center gap-1.5 shrink-0">
+              <div class="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/45 flex items-center justify-center text-emerald-300 shadow-[0_0_25px_rgba(52,211,153,0.28)]">
+                <span id="receiverPulseRing" class="node-ring absolute inset-0 rounded-2xl border-2 border-emerald-400 hidden"></span>
+                <svg class="w-6 h-6 sm:w-7 sm:h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+              </div>
+              <span id="rightNodeLabel" class="text-[11px] font-semibold text-emerald-300 uppercase tracking-wider">Receiver</span>
+            </div>
+          </div>
+
+          <!-- Real-Time Transfer Progress & Speed Metrics -->
+          <div id="activeTransferMetrics" class="mt-4 pt-4 border-t border-white/10 hidden">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2 min-w-0">
+                <span id="metricFileBadge" class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shrink-0 bg-cyan-500/15 text-cyan-300 border-cyan-400/30">FILE</span>
+                <p id="metricFileName" class="text-xs sm:text-sm font-semibold text-white truncate">Preparing...</p>
+              </div>
+              <span id="metricPercent" class="font-mono text-xs sm:text-sm font-bold text-cyan-300 shrink-0">0%</span>
+            </div>
+
+            <div class="w-full h-2.5 rounded-full bg-slate-900/90 border border-white/10 overflow-hidden">
+              <div id="metricProgressBar" class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-violet-500 to-emerald-400 transition-all duration-100" style="width: 0%;"></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-2 text-[11px] font-mono text-slate-400">
+              <span id="metricSpeed" class="text-cyan-300 font-semibold">0.00 MB/s</span>
+              <span id="metricTransferred">0 B / 0 B</span>
+              <span>ETA: <strong id="metricEta" class="text-slate-200">--</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Two-Column Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          <!-- LEFT COLUMN (7 cols): Pairing + File Dropzone + Quick Text -->
+          <div class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- SEND PANEL -->
+            <div id="sendPanel" class="glass-panel spotlight-card tilt-card rounded-3xl p-5 sm:p-7 flex flex-col gap-5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 class="text-lg sm:text-xl font-bold text-white">ShareKro Transfer Room</h2>
+                  <p class="text-xs text-slate-400">Share the 6-character code, direct link, or scan QR from Android / iOS.</p>
+                </div>
+                <button id="newRoomBtn" type="button" data-cursor="NEW"
+                  class="magnetic-btn px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-semibold text-cyan-300 flex items-center gap-1.5 transition cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  New Room
+                </button>
+              </div>
+
+              <!-- Room Code + QR Code Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                <div class="sm:col-span-7 flex flex-col gap-3">
+                  <!-- 6-Character ShareKro Room Code -->
+                  <div class="glass-card-inner rounded-2xl p-4 text-center relative overflow-hidden">
+                    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">ShareKro Room Code</span>
+                    <div id="roomCodeDisplay" class="font-mono text-3xl sm:text-4xl font-extrabold tracking-[0.22em] text-cyan-300 mt-1 select-all">
+                      ------
+                    </div>
+                    <div class="flex items-center justify-center gap-2 mt-3">
+                      <button id="copyCodeBtn" type="button" data-cursor="COPY"
+                        class="magnetic-btn flex-1 py-2.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Copy Code
+                      </button>
+                      <button id="copyLinkBtn" type="button" data-cursor="LINK"
+                        class="magnetic-btn flex-1 py-2.5 px-3 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-400/30 text-violet-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        Copy Link
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Optional 4-Digit Room PIN Lock -->
+                  <div class="glass-card-inner rounded-2xl p-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-violet-400 shrink-0 ml-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <input id="senderPinInput" type="password" inputmode="numeric" maxlength="4" data-cursor="PIN" placeholder="Optional 4-digit PIN (e.g. 4829)"
+                      class="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-500 outline-none font-mono" />
+                    <button id="applyPinBtn" type="button" data-cursor="LOCK"
+                      class="magnetic-btn px-3 py-1.5 rounded-xl bg-violet-500/20 hover:bg-violet-500/35 border border-violet-400/30 text-violet-200 text-xs font-semibold transition shrink-0 cursor-pointer">
+                      Set PIN
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Live Scannable QR Code -->
+                <div class="sm:col-span-5 glass-card-inner rounded-2xl p-4 flex flex-col items-center justify-center text-center" data-cursor="SCAN">
+                  <div id="qrCodeContainer" class="bg-white p-2.5 rounded-2xl shadow-lg shadow-black/40 w-[144px] h-[144px] flex items-center justify-center">
+                    <span class="text-xs text-slate-500 font-medium">Generating QR...</span>
+                  </div>
+                  <p class="text-[11px] text-slate-400 mt-2.5 font-medium">Scan with iOS / Android Camera</p>
+                </div>
+              </div>
+
+              <!-- Quick Tip -->
+              <div class="rounded-2xl bg-cyan-500/10 border border-cyan-400/20 px-4 py-3 flex items-start gap-3">
+                <svg class="w-5 h-5 text-cyan-300 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <p class="text-xs text-cyan-100/90 leading-relaxed">
+                  <strong class="text-cyan-300">Instant Pairing:</strong> Open the copied link on any phone or laptop, scan the QR code, or click <strong class="text-pink-300">Demo</strong> in the header to test the animations right now!
+                </p>
+              </div>
+            </div>
+
+            <!-- RECEIVE PANEL -->
+            <div id="receivePanel" class="glass-panel spotlight-card tilt-card rounded-3xl p-5 sm:p-7 flex-col gap-5 hidden">
+              <div>
+                <h2 class="text-lg sm:text-xl font-bold text-white">Receive Files via ShareKro</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Enter the 6-character ShareKro Room Code or paste the share link from the sender.</p>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-3">
+                <input id="joinCodeInput" type="text" maxlength="120" data-cursor="CODE" placeholder="ENTER 6-CHAR CODE"
+                  class="flex-1 px-4 py-4 rounded-2xl bg-slate-900/80 border border-slate-700 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none text-white font-mono text-xl sm:text-2xl tracking-[0.2em] uppercase text-center transition" />
+                <button id="joinRoomBtn" type="button" data-cursor="JOIN"
+                  class="magnetic-btn px-7 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-emerald-500 hover:brightness-110 text-white font-bold text-sm sm:text-base shadow-lg shadow-cyan-500/25 transition cursor-pointer shrink-0">
+                  Connect P2P
+                </button>
+              </div>
+
+              <!-- Instant Auto-Download Toggle -->
+              <div class="glass-card-inner rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs sm:text-sm font-semibold text-white">Auto-Download Received Files</p>
+                  <p class="text-[11px] text-slate-400">Automatically save incoming files to your device (manual Download & Preview buttons are always available).</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0" data-cursor="TOGGLE">
+                  <input id="autoDownloadToggle" type="checkbox" checked class="sr-only peer" />
+                  <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- MULTI-FILE DROPZONE & QUICK TEXT / CLIPBOARD SHARE -->
+            <div class="glass-panel spotlight-card tilt-card rounded-3xl p-5 sm:p-7 flex flex-col gap-5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-base sm:text-lg font-bold text-white">Drop Files to Share</h3>
+                  <p class="text-xs text-slate-400">Photos, Videos, Word, Excel, PDF, PPT, Text, Audio, ZIP, APK & more</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="queueBadge" class="hidden px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-300 border border-violet-400/30">
+                    0 queued
+                  </span>
+                  <button id="browseFolderBtn" type="button" data-cursor="FOLDER"
+                    class="magnetic-btn px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-[11px] font-semibold text-slate-200 transition cursor-pointer">
+                    + Folder
+                  </button>
+                </div>
+              </div>
+
+              <!-- Drag & Drop Zone -->
+              <div id="dropZone" data-cursor="DROP" data-cursor-mode="drop"
+                class="relative border-2 border-dashed border-slate-600/80 hover:border-cyan-400/80 rounded-2xl p-6 sm:p-8 text-center transition-all duration-200 cursor-pointer bg-slate-900/40 group">
+                <input id="fileInput" type="file" multiple class="hidden" />
+                <input id="folderInput" type="file" webkitdirectory directory multiple class="hidden" />
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-pink-500/20 border border-cyan-400/35 flex items-center justify-center text-cyan-300 mb-3 group-hover:scale-110 transition-transform">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <p class="text-sm sm:text-base font-semibold text-white">Drag & drop files here, or <span class="text-cyan-300 underline underline-offset-2">tap to browse</span></p>
+                <p class="text-xs text-slate-400 mt-1.5">Multi-file & large GB-scale streaming with zero quality compression</p>
+
+                <!-- All File Types Badges -->
+                <div class="flex flex-wrap justify-center gap-1.5 mt-4">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-pink-500/15 text-pink-300 border border-pink-500/20">Photos</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/20">4K Video</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/20">Word</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">Excel</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/20">PDF / PPT</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/20">ZIP / APK</span>
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-500/20">Any File</span>
+                </div>
+              </div>
+
+              <!-- Quick Text / Clipboard Share -->
+              <div class="glass-card-inner rounded-2xl p-3.5">
+                <label for="quickTextInput" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-2">
+                  <svg class="w-3.5 h-3.5 text-cyan-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                  Quick Text / Clipboard Share
+                </label>
+                <div class="flex gap-2">
+                  <input id="quickTextInput" type="text" data-cursor="TEXT" placeholder="Type or paste a link, note, or text snippet to share instantly..."
+                    class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-950/75 border border-slate-700/80 focus:border-cyan-400 outline-none text-xs sm:text-sm text-white placeholder-slate-500 transition" />
+                  <button id="sendTextBtn" type="button" data-cursor="SEND"
+                    class="magnetic-btn px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white text-xs sm:text-sm font-semibold transition cursor-pointer shrink-0">
+                    Share Text
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN (5 cols): Received & Sent Files Log -->
+          <div class="lg:col-span-5 glass-panel spotlight-card rounded-3xl p-5 sm:p-6 flex flex-col gap-4 lg:sticky lg:top-24">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <h3 class="text-base sm:text-lg font-bold text-white">ShareKro Transfers</h3>
+                <span id="logCountBadge" class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-800 text-cyan-300 border border-slate-700">0</span>
+              </div>
+              <button id="clearLogBtn" type="button" data-cursor="CLEAR"
+                class="text-xs text-slate-400 hover:text-rose-300 transition cursor-pointer hidden">
+                Clear
+              </button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyLogState" class="py-12 text-center flex flex-col items-center justify-center gap-3">
+              <div class="w-14 h-14 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-500">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-300">No transfers yet</p>
+                <p class="text-xs text-slate-500 mt-1 max-w-[240px] mx-auto">Shared files & clipboard snippets appear here with instant Download, Copy, and Image/Text Preview.</p>
+              </div>
+            </div>
+
+            <!-- Dynamic List of Transferred Files & Texts -->
+            <div id="transferLogList" class="flex flex-col gap-3 max-h-[540px] overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: INFINITE KINETIC DUAL-ROW FILE-FORMAT MARQUEE -->
+      <section class="reveal flex flex-col gap-4 py-4" data-reveal="fade-up">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-cyan-300 font-semibold">Universal Compatibility</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Share Literally <span class="text-gradient">Everything</span></h2>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">Hover to pause & inspect — zero format restrictions or compression.</p>
+        </div>
+
+        <div class="marquee-wrapper relative overflow-hidden rounded-3xl glass-panel py-5 flex flex-col gap-3.5" data-cursor="HOVER">
+          <!-- Edge Fade Masks -->
+          <div class="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-[#070c1e] to-transparent z-10"></div>
+          <div class="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-[#070c1e] to-transparent z-10"></div>
+
+          <!-- Row 1 (Leftward) -->
+          <div class="marquee-track-left flex items-center gap-3 px-2">
+            <!-- Set A -->
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-500/10 border border-purple-400/25 text-purple-200 text-xs sm:text-sm font-semibold shrink-0"><span>🎬</span> 4K / 8K Video (MP4, MOV, MKV)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-pink-500/10 border border-pink-400/25 text-pink-200 text-xs sm:text-sm font-semibold shrink-0"><span>🖼️</span> Photos & RAW (PNG, JPG, HEIC)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-400/25 text-blue-200 text-xs sm:text-sm font-semibold shrink-0"><span>📝</span> Microsoft Word (DOCX, RTF)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/25 text-emerald-200 text-xs sm:text-sm font-semibold shrink-0"><span>📊</span> Excel & Sheets (XLSX, CSV)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-500/10 border border-rose-400/25 text-rose-200 text-xs sm:text-sm font-semibold shrink-0"><span>📄</span> PDF Documents & eBooks</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-orange-500/10 border border-orange-400/25 text-orange-200 text-xs sm:text-sm font-semibold shrink-0"><span>📽️</span> PowerPoint Decks (PPTX)</div>
+            <!-- Set B (Duplicate for Seamless Loop) -->
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-500/10 border border-purple-400/25 text-purple-200 text-xs sm:text-sm font-semibold shrink-0"><span>🎬</span> 4K / 8K Video (MP4, MOV, MKV)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-pink-500/10 border border-pink-400/25 text-pink-200 text-xs sm:text-sm font-semibold shrink-0"><span>🖼️</span> Photos & RAW (PNG, JPG, HEIC)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-blue-500/10 border border-blue-400/25 text-blue-200 text-xs sm:text-sm font-semibold shrink-0"><span>📝</span> Microsoft Word (DOCX, RTF)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/25 text-emerald-200 text-xs sm:text-sm font-semibold shrink-0"><span>📊</span> Excel & Sheets (XLSX, CSV)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-rose-500/10 border border-rose-400/25 text-rose-200 text-xs sm:text-sm font-semibold shrink-0"><span>📄</span> PDF Documents & eBooks</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-orange-500/10 border border-orange-400/25 text-orange-200 text-xs sm:text-sm font-semibold shrink-0"><span>📽️</span> PowerPoint Decks (PPTX)</div>
+          </div>
+
+          <!-- Row 2 (Rightward) -->
+          <div class="marquee-track-right flex items-center gap-3 px-2">
+            <!-- Set A -->
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-yellow-500/10 border border-yellow-400/25 text-yellow-200 text-xs sm:text-sm font-semibold shrink-0"><span>📦</span> Archives (ZIP, RAR, 7Z, TAR)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-lime-500/10 border border-lime-400/25 text-lime-200 text-xs sm:text-sm font-semibold shrink-0"><span>⚡</span> Apps & Installers (APK, DMG, EXE)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-400/25 text-amber-200 text-xs sm:text-sm font-semibold shrink-0"><span>🎵</span> Lossless Audio (FLAC, WAV, MP3)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-400/25 text-cyan-200 text-xs sm:text-sm font-semibold shrink-0"><span>💻</span> Source Code & JSON (JS, PY, HTML)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-400/25 text-indigo-200 text-xs sm:text-sm font-semibold shrink-0"><span>📂</span> Entire Folders & Batch Queues</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-400/25 text-fuchsia-200 text-xs sm:text-sm font-semibold shrink-0"><span>📋</span> Instant Clipboard & Live Links</div>
+            <!-- Set B (Duplicate for Seamless Loop) -->
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-yellow-500/10 border border-yellow-400/25 text-yellow-200 text-xs sm:text-sm font-semibold shrink-0"><span>📦</span> Archives (ZIP, RAR, 7Z, TAR)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-lime-500/10 border border-lime-400/25 text-lime-200 text-xs sm:text-sm font-semibold shrink-0"><span>⚡</span> Apps & Installers (APK, DMG, EXE)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-400/25 text-amber-200 text-xs sm:text-sm font-semibold shrink-0"><span>🎵</span> Lossless Audio (FLAC, WAV, MP3)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-400/25 text-cyan-200 text-xs sm:text-sm font-semibold shrink-0"><span>💻</span> Source Code & JSON (JS, PY, HTML)</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-400/25 text-indigo-200 text-xs sm:text-sm font-semibold shrink-0"><span>📂</span> Entire Folders & Batch Queues</div>
+            <div class="marquee-chip flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-400/25 text-fuchsia-200 text-xs sm:text-sm font-semibold shrink-0"><span>📋</span> Instant Clipboard & Live Links</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: SCROLL-TRIGGERED "HOW SHAREKRO WORKS" INTERACTIVE PIPELINE -->
+      <section class="flex flex-col gap-6 py-4">
+        <div class="text-center max-w-2xl mx-auto reveal" data-reveal="fade-up">
+          <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-pink-400 font-semibold">3-Step Kinetic Pipeline</span>
+          <h2 class="text-2xl sm:text-4xl font-extrabold text-white mt-1">How <span class="text-gradient">ShareKro</span> Beams Your Data</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-2">No accounts, no app installs, no waiting for cloud uploads. Just pair and beam directly device-to-device.</p>
+        </div>
+
+        <div class="relative">
+          <!-- Animated Flowing SVG Data Line Connecting the 3 Pipeline Cards (Desktop) -->
+          <svg class="hidden lg:block absolute top-1/2 left-0 w-full h-16 -translate-y-1/2 pointer-events-none z-0" viewBox="0 0 1000 80" fill="none" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="pipeGrad" x1="0" y1="0" x2="1000" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00f2fe" />
+                <stop offset="0.5" stop-color="#7b2ff7" />
+                <stop offset="1" stop-color="#00e676" />
+              </linearGradient>
+            </defs>
+            <path d="M 120 40 C 260 10, 340 70, 500 40 C 660 10, 740 70, 880 40" stroke="url(#pipeGrad)" stroke-width="2.5" stroke-opacity="0.25" />
+            <path d="M 120 40 C 260 10, 340 70, 500 40 C 660 10, 740 70, 880 40" stroke="url(#pipeGrad)" stroke-width="3" stroke-linecap="round" class="pipeline-flow-line" />
+          </svg>
+
+          <div class="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- Step 1 -->
+            <div class="reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col gap-4" data-reveal="slide-left" style="transition-delay: 0.05s;">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-400/35 flex items-center justify-center text-cyan-300 shadow-[0_0_24px_rgba(0,242,254,0.22)]">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                    <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2"></path>
+                  </svg>
+                </div>
+                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">STEP 01</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">Pair Instantly via QR / Code</h3>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                  Open ShareKro to get a unique 6-character <span class="font-mono text-cyan-300">SKXXXX</span> code and scannable QR. Add an optional 4-digit PIN lock for extra privacy.
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col gap-4" data-reveal="scale-in" style="transition-delay: 0.16s;">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-violet-500/15 border border-violet-400/35 flex items-center justify-center text-violet-300 shadow-[0_0_24px_rgba(123,47,247,0.25)]">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-400/25">STEP 02</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">Stream via Encrypted P2P Beam</h3>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                  Drop photos, 4K videos, Word/Excel docs, or entire folders. ShareKro streams 64KB binary chunks with flow control over DTLS-encrypted WebRTC.
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col gap-4" data-reveal="slide-right" style="transition-delay: 0.27s;">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/35 flex items-center justify-center text-emerald-300 shadow-[0_0_24px_rgba(0,230,118,0.22)]">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">STEP 03</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">Zero Cloud & Full Speed</h3>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                  Your files fly straight from sender to receiver at maximum local or internet bandwidth — never stored on any third-party server.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: SECURITY & CROSS-DEVICE INTERACTIVE BENTO GRID -->
+      <section class="flex flex-col gap-6 py-4">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 reveal" data-reveal="fade-up">
+          <div>
+            <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-emerald-300 font-semibold">Engineered For Everywhere</span>
+            <h2 class="text-2xl sm:text-4xl font-extrabold text-white mt-1">Security & <span class="text-gradient">Cross-Device</span> Power</h2>
+          </div>
+          <a href="#top" data-cursor="TOP" class="magnetic-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/35 text-cyan-200 text-xs font-semibold w-fit">
+            Start Sharing Now
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <!-- Bento Card 1: Cross-Device Matrix (7 cols) -->
+          <div class="md:col-span-7 reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col justify-between gap-5" data-reveal="tilt-in" style="transition-delay: 0.05s;">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">Any Browser · Any OS</span>
+              <h3 class="text-xl font-bold text-white mt-3">Android ↔ iOS ↔ Windows ↔ macOS ↔ Linux</h3>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                Break down ecosystem walls. Beam original-quality photos from iPhone to Windows, 4K videos from Android to MacBook, or spreadsheets across desktops instantly.
+              </p>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <div class="glass-card-inner rounded-2xl p-3 text-center hover:border-emerald-400/40 transition">
+                <div class="text-lg">🤖</div>
+                <p class="text-xs font-semibold text-emerald-300 mt-1">Android</p>
+              </div>
+              <div class="glass-card-inner rounded-2xl p-3 text-center hover:border-cyan-400/40 transition">
+                <div class="text-lg">📱</div>
+                <p class="text-xs font-semibold text-cyan-300 mt-1">iOS / iPad</p>
+              </div>
+              <div class="glass-card-inner rounded-2xl p-3 text-center hover:border-blue-400/40 transition">
+                <div class="text-lg">🪟</div>
+                <p class="text-xs font-semibold text-blue-300 mt-1">Windows</p>
+              </div>
+              <div class="glass-card-inner rounded-2xl p-3 text-center hover:border-violet-400/40 transition">
+                <div class="text-lg">💻</div>
+                <p class="text-xs font-semibold text-violet-300 mt-1">macOS</p>
+              </div>
+              <div class="glass-card-inner rounded-2xl p-3 text-center col-span-2 sm:col-span-1 hover:border-pink-400/40 transition">
+                <div class="text-lg">🐧</div>
+                <p class="text-xs font-semibold text-pink-300 mt-1">Linux</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento Card 2: DTLS E2EE (5 cols) -->
+          <div class="md:col-span-5 reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col justify-between gap-4" data-reveal="tilt-in" style="transition-delay: 0.14s;">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-400/35 flex items-center justify-center text-emerald-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white">DTLS End-to-End Encryption</h3>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                Every WebRTC DataChannel packet is cryptographically sealed in transit using DTLS 1.2/1.3, plus optional SHA-256 hashed 4-digit Room PIN verification.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-400/20 rounded-xl px-3 py-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Zero-Knowledge P2P Tunnel
+            </div>
+          </div>
+
+          <!-- Bento Card 3: Unlimited Large Files (5 cols) -->
+          <div class="md:col-span-5 reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col justify-between gap-4" data-reveal="tilt-in" style="transition-delay: 0.22s;">
+            <div class="w-12 h-12 rounded-2xl bg-pink-500/15 border border-pink-400/35 flex items-center justify-center text-pink-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white">64KB Chunked Streaming</h3>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1.5 leading-relaxed">
+                Adaptive <span class="font-mono text-pink-300">bufferedAmount</span> backpressure keeps memory stable so you can send huge multi-gigabyte videos and archives smoothly.
+              </p>
+            </div>
+          </div>
+
+          <!-- Bento Card 4: Zero Login & Instant Preview (7 cols) -->
+          <div class="md:col-span-7 reveal glass-panel spotlight-card tilt-card rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5" data-reveal="tilt-in" style="transition-delay: 0.3s;">
+            <div class="flex flex-col gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-400/25 w-fit">Zero Friction</span>
+              <h3 class="text-xl font-bold text-white">No Login. No Signup. No File Limits.</h3>
+              <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
+                Open ShareKro in any modern browser and start beaming in under 3 seconds. Preview received images and text files right inside the app before downloading.
+              </p>
+            </div>
+            <button type="button" onclick="document.getElementById('demoTransferBtn').click(); window.scrollTo({ top: 0, behavior: 'smooth' });" data-cursor="DEMO"
+              class="magnetic-btn px-5 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-violet-500 to-pink-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-violet-500/30 shrink-0 cursor-pointer">
+              Launch Demo Beam ✨
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-5 text-center text-xs text-slate-500 border-t border-white/5 mt-8">
+      <p>ShareKro P2P · Direct WebRTC DataChannel with DTLS End-to-End Encryption · Zero files ever touch a server.</p>
+    </footer>
+  </div>
+
+  <!-- Application Script -->
+  <script>
+    /* =========================================================================
+       1. CONFIGURATION & APPLICATION STATE
+    ========================================================================= */
+    const PEER_PREFIX = 'sharekro-p2p-v1-';
+    const CHUNK_SIZE = 64 * 1024; // 64KB high-speed WebRTC binary chunks
+    const MAX_BUFFERED_AMOUNT = 4 * 1024 * 1024; // 4MB backpressure ceiling
+    const BUFFER_LOW_THRESHOLD = 512 * 1024; // 512KB resume threshold
+
+    const ICE_SERVERS = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+    ];
+
+    const state = {
+      mode: 'send',
+      role: 'sender',
+      roomCode: '',
+      pinHash: null,
+      peer: null,
+      conn: null,
+      connected: false,
+      authenticated: false,
+      sendQueue: [],
+      isSending: false,
+      incomingFile: null,
+      packetInterval: null,
+      soundEnabled: true,
+      logCount: 0,
+      demoRunning: false,
+      sandboxNotified: false,
+    };
+
+    /* =========================================================================
+       2. DOM ELEMENT REFERENCES
+    ========================================================================= */
+    const el = {
+      toastContainer: document.getElementById('toastContainer'),
+      celebrationBanner: document.getElementById('celebrationBanner'),
+      celebrationTitle: document.getElementById('celebrationTitle'),
+      celebrationSubtitle: document.getElementById('celebrationSubtitle'),
+
+      pinModal: document.getElementById('pinModal'),
+      pinModalInput: document.getElementById('pinModalInput'),
+      pinModalError: document.getElementById('pinModalError'),
+      pinModalCancel: document.getElementById('pinModalCancel'),
+      pinModalSubmit: document.getElementById('pinModalSubmit'),
+
+      previewModal: document.getElementById('previewModal'),
+      previewModalTitle: document.getElementById('previewModalTitle'),
+      previewModalMeta: document.getElementById('previewModalMeta'),
+      previewModalBody: document.getElementById('previewModalBody'),
+      previewModalClose: document.getElementById('previewModalClose'),
+
+      demoTransferBtn: document.getElementById('demoTransferBtn'),
+      statusSonarRing: document.getElementById('statusSonarRing'),
+      connectionPill: document.getElementById('connectionPill'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      soundToggleBtn: document.getElementById('soundToggleBtn'),
+      soundOnIcon: document.getElementById('soundOnIcon'),
+      soundOffIcon: document.getElementById('soundOffIcon'),
+
+      tabSendBtn: document.getElementById('tabSendBtn'),
+      tabReceiveBtn: document.getElementById('tabReceiveBtn'),
+      sendPanel: document.getElementById('sendPanel'),
+      receivePanel: document.getElementById('receivePanel'),
+
+      beamStage: document.getElementById('beamStage'),
+      beamStageTitle: document.getElementById('beamStageTitle'),
+      activeRoomBadge: document.getElementById('activeRoomBadge'),
+      disconnectBtn: document.getElementById('disconnectBtn'),
+      senderPulseRing: document.getElementById('senderPulseRing'),
+      receiverPulseRing: document.getElementById('receiverPulseRing'),
+      leftNodeLabel: document.getElementById('leftNodeLabel'),
+      rightNodeLabel: document.getElementById('rightNodeLabel'),
+      beamTunnelLine: document.getElementById('beamTunnelLine'),
+      beamPacketsLayer: document.getElementById('beamPacketsLayer'),
+      activeTransferMetrics: document.getElementById('activeTransferMetrics'),
+      metricFileBadge: document.getElementById('metricFileBadge'),
+      metricFileName: document.getElementById('metricFileName'),
+      metricPercent: document.getElementById('metricPercent'),
+      metricProgressBar: document.getElementById('metricProgressBar'),
+      metricSpeed: document.getElementById('metricSpeed'),
+      metricTransferred: document.getElementById('metricTransferred'),
+      metricEta: document.getElementById('metricEta'),
+
+      newRoomBtn: document.getElementById('newRoomBtn'),
+      roomCodeDisplay: document.getElementById('roomCodeDisplay'),
+      copyCodeBtn: document.getElementById('copyCodeBtn'),
+      copyLinkBtn: document.getElementById('copyLinkBtn'),
+      senderPinInput: document.getElementById('senderPinInput'),
+      applyPinBtn: document.getElementById('applyPinBtn'),
+      qrCodeContainer: document.getElementById('qrCodeContainer'),
+
+      joinCodeInput: document.getElementById('joinCodeInput'),
+      joinRoomBtn: document.getElementById('joinRoomBtn'),
+      autoDownloadToggle: document.getElementById('autoDownloadToggle'),
+
+      queueBadge: document.getElementById('queueBadge'),
+      browseFolderBtn: document.getElementById('browseFolderBtn'),
+      dropZone: document.getElementById('dropZone'),
+      fileInput: document.getElementById('fileInput'),
+      folderInput: document.getElementById('folderInput'),
+      quickTextInput: document.getElementById('quickTextInput'),
+      sendTextBtn: document.getElementById('sendTextBtn'),
+
+      logCountBadge: document.getElementById('logCountBadge'),
+      clearLogBtn: document.getElementById('clearLogBtn'),
+      emptyLogState: document.getElementById('emptyLogState'),
+      transferLogList: document.getElementById('transferLogList'),
+    };
+
+    /* =========================================================================
+       3. UTILITY, CRYPTO, AUDIO CHIME & UI STATUS HELPERS
+    ========================================================================= */
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let suffix = '';
+      for (let i = 0; i < 4; i++) {
+        suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return 'SK' + suffix;
+    }
+
+    async function hashPin(pin) {
+      try {
+        if (window.crypto && window.crypto.subtle) {
+          const data = new TextEncoder().encode('sharekro-salt:' + pin);
+          const hashBuf = await window.crypto.subtle.digest('SHA-256', data);
+          return Array.from(new Uint8Array(hashBuf))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+        }
+      } catch (_) {}
+      // Lightweight fallback for non-secure contexts
+      let h = 2166136261;
+      for (let i = 0; i < pin.length; i++) {
+        h ^= pin.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(16);
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes <= 0) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+      return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
+    }
+
+    function formatEta(seconds) {
+      if (!isFinite(seconds) || seconds <= 0) return '< 1s';
+      const s = Math.ceil(seconds);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}m ${rem}s`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getFileTypeMeta(filename, mime = '') {
+      const ext = (filename || '').split('.').pop().toLowerCase();
+      const m = (mime || '').toLowerCase();
+
+      if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'heic', 'bmp'].includes(ext)) {
+        return { kind: 'image', label: 'IMG', icon: '🖼️', color: 'text-pink-300', bg: 'bg-pink-500/15', border: 'border-pink-400/35', glow: 'rgba(244,114,182,0.45)' };
+      }
+      if (m.startsWith('video/') || ['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v'].includes(ext)) {
+        return { kind: 'video', label: 'VIDEO', icon: '🎬', color: 'text-purple-300', bg: 'bg-purple-500/15', border: 'border-purple-400/35', glow: 'rgba(192,132,252,0.45)' };
+      }
+      if (m.startsWith('audio/') || ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'].includes(ext)) {
+        return { kind: 'audio', label: 'AUDIO', icon: '🎵', color: 'text-amber-300', bg: 'bg-amber-500/15', border: 'border-amber-400/35', glow: 'rgba(251,191,36,0.45)' };
+      }
+      if (ext === 'pdf' || m.includes('pdf')) {
+        return { kind: 'pdf', label: 'PDF', icon: '📄', color: 'text-rose-300', bg: 'bg-rose-500/15', border: 'border-rose-400/35', glow: 'rgba(251,113,133,0.45)' };
+      }
+      if (['doc', 'docx', 'rtf', 'odt'].includes(ext) || m.includes('word')) {
+        return { kind: 'word', label: 'WORD', icon: '📝', color: 'text-blue-300', bg: 'bg-blue-500/15', border: 'border-blue-400/35', glow: 'rgba(96,165,250,0.45)' };
+      }
+      if (['xls', 'xlsx', 'csv', 'ods'].includes(ext) || m.includes('sheet') || m.includes('excel')) {
+        return { kind: 'excel', label: 'EXCEL', icon: '📊', color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/35', glow: 'rgba(52,211,153,0.45)' };
+      }
+      if (['ppt', 'pptx', 'key'].includes(ext) || m.includes('presentation')) {
+        return { kind: 'ppt', label: 'PPT', icon: '📽️', color: 'text-orange-300', bg: 'bg-orange-500/15', border: 'border-orange-400/35', glow: 'rgba(251,146,60,0.45)' };
+      }
+      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+        return { kind: 'archive', label: 'ZIP', icon: '📦', color: 'text-yellow-300', bg: 'bg-yellow-500/15', border: 'border-yellow-400/35', glow: 'rgba(250,204,21,0.45)' };
+      }
+      if (['apk', 'exe', 'dmg', 'msi', 'deb'].includes(ext)) {
+        return { kind: 'app', label: 'APP', icon: '⚡', color: 'text-lime-300', bg: 'bg-lime-500/15', border: 'border-lime-400/35', glow: 'rgba(163,230,53,0.45)' };
+      }
+      if (m.startsWith('text/') || ['txt', 'md', 'json', 'js', 'ts', 'py', 'html', 'css', 'xml', 'log', 'yaml', 'yml'].includes(ext)) {
+        return { kind: 'text', label: 'TEXT', icon: '💻', color: 'text-cyan-300', bg: 'bg-cyan-500/15', border: 'border-cyan-400/35', glow: 'rgba(34,211,238,0.45)' };
+      }
+      return { kind: 'file', label: (ext || 'FILE').toUpperCase().slice(0, 5), icon: '📁', color: 'text-slate-200', bg: 'bg-slate-700/40', border: 'border-slate-500/35', glow: 'rgba(148,163,184,0.4)' };
+    }
+
+    function showToast(message, type = 'info') {
+      const styles = {
+        info: 'border-cyan-400/35 text-cyan-100 bg-slate-900/90',
+        success: 'border-emerald-400/40 text-emerald-100 bg-slate-900/90',
+        warn: 'border-amber-400/40 text-amber-100 bg-slate-900/90',
+        error: 'border-rose-400/45 text-rose-100 bg-slate-900/90',
+      };
+      const dotColors = {
+        info: 'bg-cyan-400',
+        success: 'bg-emerald-400',
+        warn: 'bg-amber-400',
+        error: 'bg-rose-400',
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto rounded-2xl px-4 py-3 border backdrop-blur-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-medium animate-pop-in ${styles[type] || styles.info}`;
+      toast.innerHTML = `<span class="w-2 h-2 rounded-full shrink-0 ${dotColors[type] || dotColors.info}"></span><span class="leading-snug">${escapeHtml(message)}</span>`;
+      el.toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function copyTextToClipboard(text, successMsg = 'Copied to clipboard!') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (copied) {
+          showToast(successMsg, 'success');
+          return;
+        }
+      } catch (_) {}
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => showToast(successMsg, 'success'))
+          .catch(() => showToast('Copy failed — please select and copy manually.', 'warn'));
+      } else {
+        showToast('Copy failed — please select and copy manually.', 'warn');
+      }
+    }
+
+    function updateStatus(text, statusType = 'idle') {
+      el.statusText.textContent = text;
+      const dotMap = {
+        idle: 'bg-slate-500',
+        waiting: 'bg-cyan-400 animate-pulse',
+        connecting: 'bg-amber-400 animate-pulse',
+        connected: 'bg-emerald-400 shadow-[0_0_10px_#34d399]',
+        error: 'bg-rose-500',
+      };
+      const ringMap = {
+        idle: 'rgba(148, 163, 184, 0.35)',
+        waiting: 'rgba(0, 242, 254, 0.55)',
+        connecting: 'rgba(251, 191, 36, 0.6)',
+        connected: 'rgba(52, 211, 153, 0.75)',
+        error: 'rgba(244, 63, 94, 0.55)',
+      };
+      el.statusDot.className = `w-2 h-2 rounded-full ${dotMap[statusType] || dotMap.idle}`;
+      if (el.statusSonarRing) {
+        el.statusSonarRing.style.borderColor = ringMap[statusType] || ringMap.idle;
+      }
+    }
+
+    let audioCtx = null;
+    function playChime(type = 'success') {
+      if (!state.soundEnabled) return;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const notes = type === 'connect' ? [523.25, 659.25, 783.99] : [587.33, 783.99, 1046.5];
+
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.0001, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.08, now + idx * 0.08 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.32);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.35);
+        });
+      } catch (_) {}
+    }
+
+    /* =========================================================================
+       4. 60FPS INTERACTIVE CURSOR, NEON RIBBON, WARP GRID & CONFETTI ENGINE
+    ========================================================================= */
+    const canvasShockwaves = [];
+    const canvasSparks = [];
+
+    // Exposed helper so magnetic buttons & global clicks fire neon shockwaves + micro-sparks
+    window.spawnSparkBurst = function spawnSparkBurst(x, y, accentColor = null) {
+      const palette = accentColor
+        ? [accentColor, '#00f2fe', '#ffffff']
+        : ['#00f2fe', '#7b2ff7', '#ff2a85', '#00e676', '#ffffff'];
+
+      canvasShockwaves.push({
+        x,
+        y,
+        r: 6,
+        maxR: 92,
+        alpha: 0.85,
+        color: palette[0],
+      });
+
+      for (let i = 0; i < 18; i++) {
+        const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.35;
+        const speed = 2.2 + Math.random() * 5.2;
+        canvasSparks.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          decay: 0.025 + Math.random() * 0.02,
+          size: 1.6 + Math.random() * 2.4,
+          color: palette[Math.floor(Math.random() * palette.length)],
+        });
+      }
+    };
+
+    function initBackgroundCanvas() {
+      const canvas = document.getElementById('bgCanvas');
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0, dpr = 1;
+
+      const pointer = { x: -999, y: -999, tx: -999, ty: -999, vx: 0, vy: 0, speed: 0, active: false };
+      const nodes = [];
+      const stardust = [];
+      const ribbonPoints = [];
+      const NODE_COUNT = window.innerWidth < 640 ? 34 : 62;
+      const STARDUST_COUNT = window.innerWidth < 640 ? 36 : 72;
+
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Constellation warp nodes
+      for (let i = 0; i < NODE_COUNT; i++) {
+        nodes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.42,
+          vy: (Math.random() - 0.5) * 0.42,
+          r: Math.random() * 1.9 + 1.1,
+          hue: i % 4 === 0 ? 185 : i % 4 === 1 ? 265 : i % 4 === 2 ? 330 : 152,
+        });
+      }
+
+      // Continuously drifting luminous stardust
+      for (let i = 0; i < STARDUST_COUNT; i++) {
+        stardust.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: -0.15 - Math.random() * 0.35,
+          r: Math.random() * 1.5 + 0.6,
+          phase: Math.random() * Math.PI * 2,
+          color: i % 3 === 0 ? '0, 242, 254' : i % 3 === 1 ? '255, 42, 133' : '0, 230, 118',
+        });
+      }
+
+      function pushRibbonPoint(x, y, speed) {
+        ribbonPoints.push({
+          x,
+          y,
+          life: 1,
+          width: Math.min(10, Math.max(2.2, speed * 0.24 + 2.4)),
+        });
+        if (ribbonPoints.length > 26) ribbonPoints.shift();
+      }
+
+      window.addEventListener('mousemove', (e) => {
+        const dx = e.clientX - pointer.tx;
+        const dy = e.clientY - pointer.ty;
+        pointer.vx = dx;
+        pointer.vy = dy;
+        pointer.speed = Math.hypot(dx, dy);
+        pointer.tx = e.clientX;
+        pointer.ty = e.clientY;
+        if (!pointer.active) {
+          pointer.x = e.clientX;
+          pointer.y = e.clientY;
+        }
+        pointer.active = true;
+        pushRibbonPoint(e.clientX, e.clientY, pointer.speed);
+      }, { passive: true });
+
+      window.addEventListener('mousedown', (e) => {
+        window.spawnSparkBurst(e.clientX, e.clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          const t = e.touches[0];
+          const sp = Math.hypot(t.clientX - pointer.tx, t.clientY - pointer.ty);
+          pointer.tx = t.clientX;
+          pointer.ty = t.clientY;
+          pointer.active = true;
+          pushRibbonPoint(t.clientX, t.clientY, sp);
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          const t = e.touches[0];
+          pointer.x = pointer.tx = t.clientX;
+          pointer.y = pointer.ty = t.clientY;
+          pointer.active = true;
+          window.spawnSparkBurst(t.clientX, t.clientY);
+        }
+      }, { passive: true });
+
+      window.addEventListener('mouseleave', () => { pointer.active = false; });
+
+      let tick = 0;
+      function animate() {
+        tick += 0.016;
+        ctx.clearRect(0, 0, width, height);
+
+        // Smooth cursor aura
+        if (pointer.active) {
+          pointer.x += (pointer.tx - pointer.x) * 0.22;
+          pointer.y += (pointer.ty - pointer.y) * 0.22;
+
+          const aura = ctx.createRadialGradient(pointer.x, pointer.y, 4, pointer.x, pointer.y, 210);
+          aura.addColorStop(0, 'rgba(0, 242, 254, 0.14)');
+          aura.addColorStop(0.4, 'rgba(123, 47, 247, 0.08)');
+          aura.addColorStop(0.75, 'rgba(255, 42, 133, 0.03)');
+          aura.addColorStop(1, 'rgba(5, 8, 22, 0)');
+          ctx.fillStyle = aura;
+          ctx.beginPath();
+          ctx.arc(pointer.x, pointer.y, 210, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 1. Floating Stardust Particles (Continuous drift + magnetic swirl around pointer)
+        for (let i = 0; i < stardust.length; i++) {
+          const s = stardust[i];
+          s.x += s.vx;
+          s.y += s.vy;
+          if (s.y < -10) { s.y = height + 10; s.x = Math.random() * width; }
+          if (s.x < -10) s.x = width + 10;
+          if (s.x > width + 10) s.x = -10;
+
+          if (pointer.active) {
+            const dx = s.x - pointer.x;
+            const dy = s.y - pointer.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 160 && dist > 6) {
+              const pull = (1 - dist / 160) * 1.4;
+              // Tangential swirl + gentle magnetic bend
+              s.x += (-dy / dist) * pull * 0.9 - (dx / dist) * pull * 0.25;
+              s.y += (dx / dist) * pull * 0.9 - (dy / dist) * pull * 0.25;
+            }
+          }
+
+          const twinkle = 0.35 + 0.5 * Math.sin(tick * 2.4 + s.phase);
+          ctx.fillStyle = `rgba(${s.color}, ${twinkle})`;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 2. Reactive Warp-Constellation Grid
+        const maxDist = width < 640 ? 115 : 155;
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          n.x += n.vx;
+          n.y += n.vy;
+
+          if (n.x < 0 || n.x > width) n.vx *= -1;
+          if (n.y < 0 || n.y > height) n.vy *= -1;
+
+          if (pointer.active) {
+            const dx = pointer.x - n.x;
+            const dy = pointer.y - n.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 190 && dist > 14) {
+              const force = (1 - dist / 190) * 0.032;
+              n.x += dx * force;
+              n.y += dy * force;
+            }
+          }
+
+          for (let j = i + 1; j < nodes.length; j++) {
+            const m = nodes[j];
+            const dist = Math.hypot(n.x - m.x, n.y - m.y);
+            if (dist < maxDist) {
+              const alpha = (1 - dist / maxDist) * 0.18;
+              ctx.strokeStyle = `rgba(0, 242, 254, ${alpha})`;
+              ctx.lineWidth = 0.9;
+              ctx.beginPath();
+              ctx.moveTo(n.x, n.y);
+              ctx.lineTo(m.x, m.y);
+              ctx.stroke();
+            }
+          }
+
+          if (pointer.active) {
+            const pDist = Math.hypot(n.x - pointer.x, n.y - pointer.y);
+            if (pDist < 175) {
+              const alpha = (1 - pDist / 175) * 0.38;
+              ctx.strokeStyle = `rgba(255, 42, 133, ${alpha})`;
+              ctx.lineWidth = 1.05;
+              ctx.beginPath();
+              ctx.moveTo(n.x, n.y);
+              ctx.lineTo(pointer.x, pointer.y);
+              ctx.stroke();
+            }
+          }
+
+          ctx.fillStyle = `hsla(${n.hue}, 92%, 66%, 0.72)`;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 3. Fluid Velocity-Reactive Neon Light-Ribbon Trail (Cyan -> Violet -> Magenta)
+        for (let i = ribbonPoints.length - 1; i >= 0; i--) {
+          ribbonPoints[i].life -= 0.048;
+          if (ribbonPoints[i].life <= 0) {
+            ribbonPoints.splice(i, 1);
+          }
+        }
+
+        if (ribbonPoints.length > 2) {
+          ctx.save();
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          for (let i = 1; i < ribbonPoints.length; i++) {
+            const p0 = ribbonPoints[i - 1];
+            const p1 = ribbonPoints[i];
+            const t = i / ribbonPoints.length;
+            const alpha = p1.life * 0.65;
+            const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+            grad.addColorStop(0, `rgba(0, 242, 254, ${alpha * 0.8})`);
+            grad.addColorStop(0.5, `rgba(123, 47, 247, ${alpha})`);
+            grad.addColorStop(1, `rgba(255, 42, 133, ${alpha})`);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = Math.max(1, p1.width * t * p1.life);
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // 4. Expanding Click / Tap Shockwave Ripples
+        for (let i = canvasShockwaves.length - 1; i >= 0; i--) {
+          const sw = canvasShockwaves[i];
+          sw.r += (sw.maxR - sw.r) * 0.14;
+          sw.alpha -= 0.032;
+          if (sw.alpha <= 0.01) {
+            canvasShockwaves.splice(i, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.globalAlpha = sw.alpha;
+          ctx.strokeStyle = sw.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 5. Click / Tap Micro-Spark Bursts
+        for (let i = canvasSparks.length - 1; i >= 0; i--) {
+          const sp = canvasSparks[i];
+          sp.vx *= 0.94;
+          sp.vy *= 0.94;
+          sp.x += sp.vx;
+          sp.y += sp.vy;
+          sp.life -= sp.decay;
+          if (sp.life <= 0) {
+            canvasSparks.splice(i, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.globalAlpha = sp.life;
+          ctx.fillStyle = sp.color;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = sp.color;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, sp.size * sp.life, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
+
+    /* =========================================================================
+       4B. MULTI-LAYER CUSTOM CURSOR, SCROLL REVEALS, PARALLAX, 3D TILT & MAGNETS
+    ========================================================================= */
+    function initCustomCursor() {
+      const isFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (!isFinePointer) return;
+
+      document.body.classList.add('custom-cursor-enabled');
+      const dot = document.getElementById('cursorDot');
+      const ring = document.getElementById('cursorRing');
+      const label = document.getElementById('cursorLabel');
+
+      let mx = window.innerWidth / 2;
+      let my = window.innerHeight / 2;
+      let rx = mx;
+      let ry = my;
+      let visible = false;
+
+      function updateRing() {
+        rx += (mx - rx) * 0.16;
+        ry += (my - ry) * 0.16;
+        dot.style.transform = `translate3d(${mx}px, ${my}px, 0)`;
+        ring.style.transform = `translate3d(${rx}px, ${ry}px, 0)`;
+        requestAnimationFrame(updateRing);
+      }
+      updateRing();
+
+      window.addEventListener('mousemove', (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+        if (!visible) {
+          visible = true;
+          dot.style.opacity = '1';
+          ring.style.opacity = '1';
+        }
+      }, { passive: true });
+
+      window.addEventListener('mousedown', () => ring.classList.add('cursor-pressed'));
+      window.addEventListener('mouseup', () => ring.classList.remove('cursor-pressed'));
+
+      document.addEventListener('mouseleave', () => {
+        visible = false;
+        dot.style.opacity = '0';
+        ring.style.opacity = '0';
+      });
+
+      // Context-aware morphing based on hovered element
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-cursor], button, a, input, #dropZone');
+        if (!target) {
+          ring.classList.remove('cursor-morph', 'cursor-morph-drop');
+          label.textContent = '';
+          return;
+        }
+        const customText = target.getAttribute('data-cursor');
+        const mode = target.getAttribute('data-cursor-mode');
+        if (mode === 'drop') {
+          ring.classList.remove('cursor-morph');
+          ring.classList.add('cursor-morph-drop');
+          label.textContent = customText || 'DROP';
+        } else {
+          ring.classList.remove('cursor-morph-drop');
+          ring.classList.add('cursor-morph');
+          label.textContent = customText || (target.tagName === 'INPUT' ? 'TYPE' : 'CLICK');
+        }
+      });
+    }
+
+    function initScrollAndParallax() {
+      const progressBar = document.getElementById('scrollProgressBar');
+      const orbs = document.querySelectorAll('[data-parallax]');
+
+      const updateScroll = () => {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const pct = docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0;
+        if (progressBar) progressBar.style.width = `${pct}%`;
+
+        orbs.forEach((orb) => {
+          const factor = parseFloat(orb.getAttribute('data-parallax') || '0.12');
+          orb.style.marginTop = `${scrollTop * factor}px`;
+        });
+      };
+
+      window.addEventListener('scroll', updateScroll, { passive: true });
+      updateScroll();
+
+      // IntersectionObserver for smooth scroll-triggered reveals
+      const reveals = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+        reveals.forEach((node) => observer.observe(node));
+      } else {
+        reveals.forEach((node) => node.classList.add('is-visible'));
+      }
+    }
+
+    function initInteractiveElements() {
+      const isFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+      // 1. Radial Spotlight & 3D Magnetic Tilt Cards
+      document.querySelectorAll('.spotlight-card').forEach((card) => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+
+          if (isFinePointer && card.classList.contains('tilt-card')) {
+            const rotY = ((x / rect.width) - 0.5) * 6;
+            const rotX = -((y / rect.height) - 0.5) * 6;
+            card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+          }
+        });
+
+        card.addEventListener('mouseleave', () => {
+          if (card.classList.contains('tilt-card')) {
+            card.style.transform = '';
+          }
+        });
+      });
+
+      // 2. Magnetic Pull Buttons + Click Spark Burst
+      document.querySelectorAll('.magnetic-btn').forEach((btn) => {
+        if (isFinePointer) {
+          btn.addEventListener('mousemove', (e) => {
+            const rect = btn.getBoundingClientRect();
+            const dx = (e.clientX - (rect.left + rect.width / 2)) * 0.22;
+            const dy = (e.clientY - (rect.top + rect.height / 2)) * 0.22;
+            btn.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`;
+          });
+          btn.addEventListener('mouseleave', () => {
+            btn.style.transform = '';
+          });
+        }
+        btn.addEventListener('click', (e) => {
+          const rect = btn.getBoundingClientRect();
+          const cx = e.clientX || rect.left + rect.width / 2;
+          const cy = e.clientY || rect.top + rect.height / 2;
+          window.spawnSparkBurst(cx, cy, '#ff2a85');
+        });
+      });
+    }
+
+    // Confetti & Sparkle Celebration Engine
+    const fxState = { particles: [], running: false };
+    function triggerConfettiBurst() {
+      const canvas = document.getElementById('fxCanvas');
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const colors = ['#22d3ee', '#34d399', '#a78bfa', '#f472b6', '#fbbf24', '#ffffff'];
+      const originX = w / 2;
+      const originY = Math.min(h * 0.32, 260);
+
+      for (let i = 0; i < 105; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3.2 + Math.random() * 10;
+        fxState.particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3.6,
+          gravity: 0.22,
+          drag: 0.985,
+          size: 4 + Math.random() * 5.2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.26,
+          shape: Math.random() > 0.35 ? 'rect' : 'circle',
+          life: 1,
+          decay: 0.011 + Math.random() * 0.01,
+        });
+      }
+
+      if (!fxState.running) {
+        fxState.running = true;
+        const step = () => {
+          ctx.clearRect(0, 0, w, h);
+          for (let i = fxState.particles.length - 1; i >= 0; i--) {
+            const p = fxState.particles[i];
+            p.vx *= p.drag;
+            p.vy = p.vy * p.drag + p.gravity;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vRot;
+            p.life -= p.decay;
+
+            if (p.life <= 0) {
+              fxState.particles.splice(i, 1);
+              continue;
+            }
+
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            ctx.fillStyle = p.color;
+            if (p.shape === 'rect') {
+              ctx.fillRect(-p.size / 2, -p.size / 3, p.size, p.size * 0.65);
+            } else {
+              ctx.beginPath();
+              ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+
+          if (fxState.particles.length > 0) {
+            requestAnimationFrame(step);
+          } else {
+            ctx.clearRect(0, 0, w, h);
+            fxState.running = false;
+          }
+        };
+        requestAnimationFrame(step);
+      }
+    }
+
+    let celebrationTimeout = null;
+    function showCompletionCelebration(title, subtitle) {
+      triggerConfettiBurst();
+      playChime('success');
+
+      el.celebrationTitle.textContent = title;
+      el.celebrationSubtitle.textContent = subtitle;
+
+      // Re-trigger SVG checkmark stroke morph
+      const svg = el.celebrationBanner.querySelector('svg');
+      const clone = svg.cloneNode(true);
+      svg.parentNode.replaceChild(clone, svg);
+
+      el.celebrationBanner.classList.remove('hidden');
+      if (celebrationTimeout) clearTimeout(celebrationTimeout);
+      celebrationTimeout = setTimeout(() => {
+        el.celebrationBanner.classList.add('hidden');
+      }, 3600);
+    }
+
+    /* =========================================================================
+       5. ANIMATED "ENCRYPTED DATA BEAM" PACKET VISUALIZER
+    ========================================================================= */
+    function startBeamAnimation(fileMeta, direction = 'send') {
+      stopBeamAnimation();
+      el.beamTunnelLine.classList.remove('beam-tunnel-idle');
+      el.beamTunnelLine.classList.add('beam-tunnel');
+      el.senderPulseRing.classList.remove('hidden');
+      el.receiverPulseRing.classList.remove('hidden');
+
+      el.leftNodeLabel.textContent = direction === 'send' ? 'You (Sender)' : 'Peer (Sender)';
+      el.rightNodeLabel.textContent = direction === 'send' ? 'Peer (Receiver)' : 'You (Receiver)';
+
+      const launchPacket = () => {
+        const pkt = document.createElement('div');
+        pkt.className = `beam-packet flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border backdrop-blur-md ${fileMeta.bg} ${fileMeta.color} ${fileMeta.border}`;
+        pkt.style.boxShadow = `0 0 18px ${fileMeta.glow}`;
+        pkt.style.setProperty('--dur', `${(0.95 + Math.random() * 0.45).toFixed(2)}s`);
+        pkt.innerHTML = `<span>${fileMeta.icon}</span><span>${fileMeta.label}</span>`;
+        el.beamPacketsLayer.appendChild(pkt);
+        setTimeout(() => pkt.remove(), 1550);
+      };
+
+      launchPacket();
+      state.packetInterval = setInterval(launchPacket, 350);
+    }
+
+    function stopBeamAnimation() {
+      if (state.packetInterval) {
+        clearInterval(state.packetInterval);
+        state.packetInterval = null;
+      }
+      el.beamTunnelLine.classList.remove('beam-tunnel');
+      el.beamTunnelLine.classList.add('beam-tunnel-idle');
+      el.senderPulseRing.classList.add('hidden');
+      el.receiverPulseRing.classList.add('hidden');
+    }
+
+    /* =========================================================================
+       6. PEERJS WEBRTC P2P CONNECTION ENGINE (ZERO LOGIN / PUBLICLY USABLE)
+    ========================================================================= */
+    // Lightweight BroadcastChannel P2P fallback when external WebSockets (wss://)
+    // are blocked in sandboxed preview iframes (like Canvas). On any public host
+    // or standalone browser tab, full cross-device PeerJS WebRTC is used.
+    class LocalSandboxConnection {
+      constructor(channelName, isInitiator) {
+        this.channelName = channelName;
+        this.open = false;
+        this._handlers = {};
+        this.dataChannel = {
+          bufferedAmount: 0,
+          readyState: 'open',
+          addEventListener() {},
+          removeEventListener() {},
+        };
+
+        try {
+          this.bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(channelName) : null;
+        } catch (_) {
+          this.bc = null;
+        }
+
+        if (this.bc) {
+          this.bc.onmessage = (ev) => {
+            const payload = ev.data;
+            if (!payload || !payload.__skLocal) return;
+
+            if (payload.kind === 'hello' && !this.open) {
+              this.open = true;
+              this.bc.postMessage({ __skLocal: true, kind: 'hello-ack' });
+              this._emit('open');
+            } else if (payload.kind === 'hello-ack' && !this.open) {
+              this.open = true;
+              this._emit('open');
+            } else if (payload.kind === 'data') {
+              this._emit('data', payload.data);
+            } else if (payload.kind === 'close') {
+              this.open = false;
+              this._emit('close');
+            }
+          };
+
+          if (isInitiator) {
+            this.bc.postMessage({ __skLocal: true, kind: 'hello' });
+          }
+        }
+      }
+
+      on(event, fn) {
+        if (!this._handlers[event]) this._handlers[event] = [];
+        this._handlers[event].push(fn);
+      }
+
+      _emit(event, arg) {
+        (this._handlers[event] || []).forEach((fn) => fn(arg));
+      }
+
+      send(data) {
+        if (this.bc && this.open) {
+          this.bc.postMessage({ __skLocal: true, kind: 'data', data });
+        }
+      }
+
+      close() {
+        if (this.bc) {
+          try {
+            if (this.open) this.bc.postMessage({ __skLocal: true, kind: 'close' });
+            this.bc.close();
+          } catch (_) {}
+          this.bc = null;
+        }
+        this.open = false;
+      }
+    }
+
+    function isWebSocketRestrictedError(err) {
+      const msg = String((err && (err.message || err.type)) || err || '').toLowerCase();
+      return msg.includes('not allowed in canvas') || msg.includes('websocket') || msg.includes('socket-error');
+    }
+
+    function activateLocalSandboxMode(role, roomCode) {
+      if (state.peer) {
+        try { state.peer.destroy(); } catch (_) {}
+        state.peer = null;
+      }
+      const localConn = new LocalSandboxConnection(PEER_PREFIX + roomCode, role === 'receiver');
+      setupDataConnection(localConn, role);
+
+      if (role === 'sender') {
+        updateStatus('Preview Mode (Ready)', 'waiting');
+      } else {
+        updateStatus('Preview Mode (Searching)', 'connecting');
+      }
+
+      if (!state.sandboxNotified) {
+        state.sandboxNotified = true;
+        showToast('Preview sandbox blocks external WebSockets — Local P2P & Demo Mode active. Deploy publicly for cross-device WebRTC!', 'info');
+      }
+    }
+
+    function renderQrCode(roomCode) {
+      el.qrCodeContainer.innerHTML = '';
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(el.qrCodeContainer, {
+            text: shareUrl,
+            width: 124,
+            height: 124,
+            colorDark: '#050816',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+        } else {
+          el.qrCodeContainer.innerHTML = `<span class="text-xs font-mono text-slate-900 font-bold">${roomCode}</span>`;
+        }
+      } catch (_) {
+        el.qrCodeContainer.innerHTML = `<span class="text-xs font-mono text-slate-900 font-bold">${roomCode}</span>`;
+      }
+    }
+
+    function cleanupConnection(keepUi = false) {
+      stopBeamAnimation();
+      if (state.conn) {
+        try { state.conn.close(); } catch (_) {}
+        state.conn = null;
+      }
+      if (state.peer) {
+        try { state.peer.destroy(); } catch (_) {}
+        state.peer = null;
+      }
+      state.connected = false;
+      state.authenticated = false;
+      state.isSending = false;
+      state.incomingFile = null;
+
+      if (!keepUi) {
+        el.beamStage.classList.add('hidden');
+        el.activeTransferMetrics.classList.add('hidden');
+      }
+    }
+
+    // SENDER: Initialize PeerJS room with 6-char ShareKro code
+    async function createSenderRoom() {
+      if (typeof Peer === 'undefined') {
+        showToast('PeerJS library failed to load. Check your internet connection.', 'error');
+        updateStatus('Offline', 'error');
+        return;
+      }
+
+      cleanupConnection();
+      state.role = 'sender';
+      const roomCode = generateRoomCode();
+      state.roomCode = roomCode;
+      el.roomCodeDisplay.textContent = roomCode;
+      el.activeRoomBadge.textContent = `ROOM: ${roomCode}`;
+      renderQrCode(roomCode);
+      updateStatus('Initializing Room...', 'connecting');
+
+      const pinRaw = el.senderPinInput.value.trim();
+      state.pinHash = pinRaw ? await hashPin(pinRaw) : null;
+
+      try {
+        const peer = new Peer(PEER_PREFIX + roomCode, {
+          config: { iceServers: ICE_SERVERS },
+          debug: 0,
+        });
+        state.peer = peer;
+
+        peer.on('open', () => {
+          updateStatus('Waiting for Peer...', 'waiting');
+        });
+
+        peer.on('connection', (conn) => {
+          // Accept incoming P2P DataChannel connection
+          if (state.conn && state.conn.open) {
+            try { state.conn.close(); } catch (_) {}
+          }
+          setupDataConnection(conn, 'sender');
+        });
+
+        peer.on('error', (err) => {
+          if (isWebSocketRestrictedError(err)) {
+            activateLocalSandboxMode('sender', roomCode);
+            return;
+          }
+          if (err.type === 'unavailable-id') {
+            createSenderRoom();
+          } else {
+            showToast('Network error: ' + (err.message || err.type), 'error');
+            updateStatus('Connection Error', 'error');
+          }
+        });
+
+        peer.on('disconnected', () => {
+          if (!peer.destroyed) {
+            try { peer.reconnect(); } catch (_) {}
+          }
+        });
+      } catch (err) {
+        if (isWebSocketRestrictedError(err)) {
+          activateLocalSandboxMode('sender', roomCode);
+        } else {
+          showToast('Could not start ShareKro P2P room.', 'error');
+          updateStatus('Error', 'error');
+        }
+      }
+    }
+
+    // RECEIVER: Connect to Sender's ShareKro Room Code
+    function initiateJoinRoom(rawInput) {
+      if (typeof Peer === 'undefined') {
+        showToast('PeerJS library failed to load. Check your internet connection.', 'error');
+        return;
+      }
+
+      let code = rawInput.trim();
+      if (code.includes('room=')) {
+        try {
+          const urlObj = new URL(code);
+          code = urlObj.searchParams.get('room') || code;
+        } catch (_) {
+          const match = code.match(/room=([A-Za-z0-9]+)/i);
+          if (match) code = match[1];
+        }
+      }
+      code = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+      el.joinCodeInput.value = code;
+
+      if (code.length !== 6) {
+        showToast('Please enter a valid 6-character ShareKro Room Code.', 'warn');
+        return;
+      }
+
+      cleanupConnection();
+      state.role = 'receiver';
+      state.roomCode = code;
+      el.activeRoomBadge.textContent = `ROOM: ${code}`;
+      updateStatus('Connecting P2P...', 'connecting');
+
+      try {
+        const peer = new Peer({
+          config: { iceServers: ICE_SERVERS },
+          debug: 0,
+        });
+        state.peer = peer;
+
+        peer.on('open', () => {
+          const conn = peer.connect(PEER_PREFIX + code, {
+            reliable: true,
+            serialization: 'raw',
+          });
+          setupDataConnection(conn, 'receiver');
+        });
+
+        peer.on('error', (err) => {
+          if (isWebSocketRestrictedError(err)) {
+            activateLocalSandboxMode('receiver', code);
+            return;
+          }
+          if (err.type === 'peer-unavailable') {
+            showToast(`Room "${code}" not found. Make sure the sender has ShareKro open.`, 'error');
+            updateStatus('Room Not Found', 'error');
+          } else {
+            showToast('Could not connect: ' + (err.message || err.type), 'error');
+            updateStatus('Connection Failed', 'error');
+          }
+        });
+      } catch (err) {
+        if (isWebSocketRestrictedError(err)) {
+          activateLocalSandboxMode('receiver', code);
+        } else {
+          showToast('Failed to initialize P2P connection.', 'error');
+          updateStatus('Error', 'error');
+        }
+      }
+    }
+
+    // Configure PeerJS DataConnection & P2P PIN Handshake
+    function setupDataConnection(conn, role) {
+      state.conn = conn;
+
+      conn.on('open', () => {
+        state.connected = true;
+        if (conn.dataChannel) {
+          conn.dataChannel.binaryType = 'arraybuffer';
+          conn.dataChannel.bufferedAmountLowThreshold = BUFFER_LOW_THRESHOLD;
+        }
+
+        if (role === 'sender') {
+          if (state.pinHash) {
+            state.authenticated = false;
+            updateStatus('Verifying PIN...', 'connecting');
+            conn.send(JSON.stringify({ type: 'auth-req', pinRequired: true }));
+          } else {
+            state.authenticated = true;
+            conn.send(JSON.stringify({ type: 'auth-ok' }));
+            onAuthenticatedConnected();
+          }
+        } else {
+          // Receiver waits for sender's auth-req or auth-ok
+          updateStatus('Handshaking...', 'connecting');
+        }
+      });
+
+      conn.on('data', async (data) => {
+        if (typeof data === 'string') {
+          handleControlMessage(data);
+        } else if (data instanceof ArrayBuffer) {
+          handleBinaryChunk(data);
+        } else if (data instanceof Blob) {
+          const ab = await data.arrayBuffer();
+          handleBinaryChunk(ab);
+        } else if (ArrayBuffer.isView(data)) {
+          handleBinaryChunk(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+        }
+      });
+
+      conn.on('close', () => {
+        if (state.connected) {
+          state.connected = false;
+          state.authenticated = false;
+          stopBeamAnimation();
+          updateStatus('Peer Disconnected', 'error');
+          showToast('Peer disconnected from ShareKro.', 'warn');
+        }
+      });
+
+      conn.on('error', (err) => {
+        console.error('DataConnection error:', err);
+        showToast('P2P channel error occurred.', 'error');
+      });
+    }
+
+    function onAuthenticatedConnected() {
+      updateStatus('P2P Encrypted Connected', 'connected');
+      el.beamStage.classList.remove('hidden');
+      el.beamStageTitle.textContent = 'ShareKro Encrypted Data Beam Active';
+      showToast('Direct encrypted P2P connection established!', 'success');
+      playChime('connect');
+
+      if (state.sendQueue.length > 0 && !state.isSending) {
+        processSendQueue();
+      }
+    }
+
+    /* =========================================================================
+       7. HIGH-SPEED 64KB CHUNKED STREAMING ENGINE (WITH BACKPRESSURE)
+    ========================================================================= */
+    function enqueueFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      files.forEach(file => {
+        state.sendQueue.push({
+          id: 'sk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          file,
+        });
+      });
+
+      updateQueueBadge();
+
+      if (!state.connected || !state.authenticated) {
+        showToast(`${files.length} file(s) queued — will beam automatically once peer connects!`, 'info');
+        return;
+      }
+
+      if (!state.isSending) {
+        processSendQueue();
+      }
+    }
+
+    function updateQueueBadge() {
+      const count = state.sendQueue.length;
+      if (count > 0) {
+        el.queueBadge.textContent = `${count} queued`;
+        el.queueBadge.classList.remove('hidden');
+      } else {
+        el.queueBadge.classList.add('hidden');
+      }
+    }
+
+    function waitForBufferDrain(dc) {
+      return new Promise((resolve) => {
+        if (!dc || dc.bufferedAmount <= BUFFER_LOW_THRESHOLD || dc.readyState !== 'open') {
+          resolve();
+          return;
+        }
+        let doneFlag = false;
+        const finish = () => {
+          if (doneFlag) return;
+          doneFlag = true;
+          dc.removeEventListener('bufferedamountlow', finish);
+          resolve();
+        };
+        dc.addEventListener('bufferedamountlow', finish);
+        setTimeout(finish, 100);
+      });
+    }
+
+    async function processSendQueue() {
+      if (state.isSending || !state.connected || !state.authenticated || !state.conn || !state.conn.open) return;
+      state.isSending = true;
+
+      while (state.sendQueue.length > 0 && state.connected && state.authenticated && state.conn.open) {
+        const item = state.sendQueue.shift();
+        updateQueueBadge();
+        await sendSingleFile(item);
+      }
+
+      state.isSending = false;
+      stopBeamAnimation();
+      el.beamStageTitle.textContent = 'ShareKro Encrypted Data Beam Ready';
+    }
+
+    async function sendSingleFile(item) {
+      const { id, file } = item;
+      const meta = getFileTypeMeta(file.name, file.type);
+      const dc = state.conn.dataChannel;
+
+      el.beamStage.classList.remove('hidden');
+      el.beamStageTitle.textContent = 'Beaming Encrypted File via ShareKro...';
+      el.activeTransferMetrics.classList.remove('hidden');
+      el.metricFileBadge.textContent = meta.label;
+      el.metricFileBadge.className = `px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.bg} ${meta.color} ${meta.border}`;
+      el.metricFileName.textContent = file.name;
+      startBeamAnimation(meta, 'send');
+
+      // 1. Send Metadata Header
+      state.conn.send(JSON.stringify({
+        type: 'file-meta',
+        id,
+        name: file.name,
+        size: file.size,
+        mime: file.type || 'application/octet-stream',
+      }));
+
+      // 2. Stream 64KB chunks with bufferedAmount flow control
+      const startTime = performance.now();
+      let offset = 0;
+      let lastUiUpdate = 0;
+
+      try {
+        while (offset < file.size) {
+          if (!state.connected || !state.conn.open) {
+            throw new Error('Peer disconnected mid-transfer');
+          }
+
+          if (dc && dc.bufferedAmount > MAX_BUFFERED_AMOUNT) {
+            await waitForBufferDrain(dc);
+          }
+
+          const slice = file.slice(offset, offset + CHUNK_SIZE);
+          const buffer = await slice.arrayBuffer();
+          state.conn.send(buffer);
+          offset += buffer.byteLength;
+
+          const now = performance.now();
+          if (now - lastUiUpdate > 75 || offset >= file.size) {
+            lastUiUpdate = now;
+            updateMetricsUi(offset, file.size, startTime);
+          }
+        }
+
+        if (dc && dc.bufferedAmount > BUFFER_LOW_THRESHOLD) {
+          await waitForBufferDrain(dc);
+        }
+
+        state.conn.send(JSON.stringify({ type: 'file-end', id }));
+        updateMetricsUi(file.size, file.size, startTime);
+
+        // Local URL for sent file preview if image/text
+        const localBlobUrl = (meta.kind === 'image' || meta.kind === 'text') ? URL.createObjectURL(file) : null;
+
+        addLogEntry({
+          id,
+          direction: 'sent',
+          kind: 'file',
+          name: file.name,
+          size: file.size,
+          mime: file.type,
+          blobUrl: localBlobUrl,
+          fileBlob: file,
+        });
+
+        showCompletionCelebration('File Sent via ShareKro!', `${file.name} (${formatBytes(file.size)})`);
+      } catch (err) {
+        console.error('Send error:', err);
+        showToast(`Transfer interrupted for ${file.name}`, 'error');
+      }
+    }
+
+    function updateMetricsUi(transferred, total, startTime) {
+      const pct = total > 0 ? Math.min(100, Math.round((transferred / total) * 100)) : 100;
+      const elapsedSec = Math.max(0.05, (performance.now() - startTime) / 1000);
+      const bytesPerSec = transferred / elapsedSec;
+      const mbPerSec = (bytesPerSec / (1024 * 1024)).toFixed(2);
+      const remainingBytes = Math.max(0, total - transferred);
+      const etaSec = bytesPerSec > 0 ? remainingBytes / bytesPerSec : 0;
+
+      el.metricPercent.textContent = `${pct}%`;
+      el.metricProgressBar.style.width = `${pct}%`;
+      el.metricSpeed.textContent = `${mbPerSec} MB/s`;
+      el.metricTransferred.textContent = `${formatBytes(transferred)} / ${formatBytes(total)}`;
+      el.metricEta.textContent = pct >= 100 ? 'Done' : formatEta(etaSec);
+    }
+
+    /* =========================================================================
+       8. INCOMING CONTROL & BINARY CHUNK HANDLERS
+    ========================================================================= */
+    function handleControlMessage(raw) {
+      let msg;
+      try {
+        msg = JSON.parse(raw);
+      } catch (_) {
+        return;
+      }
+
+      // PIN Handshake Messages
+      if (msg.type === 'auth-req' && msg.pinRequired) {
+        el.pinModalInput.value = '';
+        el.pinModalError.classList.add('hidden');
+        el.pinModal.classList.remove('hidden');
+        el.pinModal.classList.add('flex');
+        setTimeout(() => el.pinModalInput.focus(), 80);
+        return;
+      }
+
+      if (msg.type === 'auth-pin' && state.role === 'sender') {
+        if (msg.pinHash === state.pinHash) {
+          state.authenticated = true;
+          state.conn.send(JSON.stringify({ type: 'auth-ok' }));
+          onAuthenticatedConnected();
+        } else {
+          state.conn.send(JSON.stringify({ type: 'auth-fail' }));
+        }
+        return;
+      }
+
+      if (msg.type === 'auth-ok') {
+        state.authenticated = true;
+        el.pinModal.classList.add('hidden');
+        el.pinModal.classList.remove('flex');
+        onAuthenticatedConnected();
+        return;
+      }
+
+      if (msg.type === 'auth-fail') {
+        el.pinModalError.classList.remove('hidden');
+        el.pinModalInput.select();
+        return;
+      }
+
+      if (!state.authenticated) return;
+
+      // File Metadata Header
+      if (msg.type === 'file-meta') {
+        const meta = getFileTypeMeta(msg.name, msg.mime);
+        state.incomingFile = {
+          id: msg.id,
+          name: msg.name,
+          size: msg.size,
+          mime: msg.mime || 'application/octet-stream',
+          chunks: [],
+          receivedBytes: 0,
+          startTime: performance.now(),
+          lastUiUpdate: 0,
+        };
+
+        el.beamStage.classList.remove('hidden');
+        el.beamStageTitle.textContent = 'Receiving Encrypted File via ShareKro...';
+        el.activeTransferMetrics.classList.remove('hidden');
+        el.metricFileBadge.textContent = meta.label;
+        el.metricFileBadge.className = `px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.bg} ${meta.color} ${meta.border}`;
+        el.metricFileName.textContent = msg.name;
+        updateMetricsUi(0, msg.size, state.incomingFile.startTime);
+        startBeamAnimation(meta, 'receive');
+
+      } else if (msg.type === 'file-end') {
+        if (!state.incomingFile) return;
+        const inc = state.incomingFile;
+        state.incomingFile = null;
+        stopBeamAnimation();
+        el.beamStageTitle.textContent = 'ShareKro Encrypted Data Beam Ready';
+        updateMetricsUi(inc.size, inc.size, inc.startTime);
+
+        const blob = new Blob(inc.chunks, { type: inc.mime });
+        const blobUrl = URL.createObjectURL(blob);
+
+        addLogEntry({
+          id: inc.id,
+          direction: 'received',
+          kind: 'file',
+          name: inc.name,
+          size: inc.size,
+          mime: inc.mime,
+          blobUrl,
+          fileBlob: blob,
+        });
+
+        showCompletionCelebration('File Received on ShareKro!', `${inc.name} (${formatBytes(inc.size)})`);
+
+        if (el.autoDownloadToggle.checked) {
+          triggerDownload(blobUrl, inc.name);
+        }
+
+      } else if (msg.type === 'text-message') {
+        addLogEntry({
+          id: msg.id,
+          direction: 'received',
+          kind: 'text',
+          text: msg.text,
+        });
+        showCompletionCelebration('Text Snippet Received!', msg.text.slice(0, 48));
+      }
+    }
+
+    function handleBinaryChunk(arrayBuffer) {
+      const inc = state.incomingFile;
+      if (!inc) return;
+
+      inc.chunks.push(arrayBuffer);
+      inc.receivedBytes += arrayBuffer.byteLength;
+
+      const now = performance.now();
+      if (now - inc.lastUiUpdate > 75 || inc.receivedBytes >= inc.size) {
+        inc.lastUiUpdate = now;
+        updateMetricsUi(inc.receivedBytes, inc.size, inc.startTime);
+      }
+    }
+
+    function triggerDownload(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 200);
+    }
+
+    function sendQuickText() {
+      const text = el.quickTextInput.value.trim();
+      if (!text) return;
+      if (!state.connected || !state.authenticated || !state.conn || !state.conn.open) {
+        showToast('Connect to a peer first to share text snippets.', 'warn');
+        return;
+      }
+
+      const id = 'txt_' + Date.now();
+      state.conn.send(JSON.stringify({
+        type: 'text-message',
+        id,
+        text,
+        timestamp: Date.now(),
+      }));
+
+      el.quickTextInput.value = '';
+      addLogEntry({ id, direction: 'sent', kind: 'text', text });
+      showToast('Text snippet shared via ShareKro!', 'success');
+      playChime('success');
+    }
+
+    /* =========================================================================
+       9. TRANSFER LOG UI & IMAGE/TEXT PREVIEW MODAL
+    ========================================================================= */
+    async function openFilePreview(entry, meta) {
+      el.previewModalTitle.textContent = entry.name;
+      el.previewModalMeta.textContent = `${meta.label} · ${formatBytes(entry.size)}`;
+      el.previewModalBody.innerHTML = '<span class="text-xs text-slate-400">Loading preview...</span>';
+      el.previewModal.classList.remove('hidden');
+      el.previewModal.classList.add('flex');
+
+      if (meta.kind === 'image' && entry.blobUrl) {
+        const img = document.createElement('img');
+        img.src = entry.blobUrl;
+        img.alt = entry.name;
+        img.className = 'max-w-full max-h-[65vh] rounded-xl object-contain shadow-lg';
+        el.previewModalBody.innerHTML = '';
+        el.previewModalBody.appendChild(img);
+      } else if (meta.kind === 'text' && entry.fileBlob) {
+        try {
+          const textContent = await entry.fileBlob.text();
+          const pre = document.createElement('pre');
+          pre.className = 'w-full text-xs sm:text-sm font-mono text-cyan-100 whitespace-pre-wrap break-words p-2 max-h-[65vh] overflow-auto';
+          pre.textContent = textContent.slice(0, 60000);
+          el.previewModalBody.innerHTML = '';
+          el.previewModalBody.appendChild(pre);
+        } catch (_) {
+          el.previewModalBody.innerHTML = '<span class="text-xs text-rose-300">Unable to render text preview.</span>';
+        }
+      }
+    }
+
+    function addLogEntry(entry) {
+      el.emptyLogState.classList.add('hidden');
+      el.clearLogBtn.classList.remove('hidden');
+      state.logCount += 1;
+      el.logCountBadge.textContent = state.logCount;
+
+      const card = document.createElement('div');
+      card.className = 'glass-card-inner rounded-2xl p-3.5 flex flex-col gap-2.5 animate-shockwave transition-all';
+
+      const dirBadge = entry.direction === 'sent'
+        ? `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">Sent</span>`
+        : entry.direction === 'demo'
+        ? `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-violet-500/15 text-violet-300 border border-violet-400/25">Demo</span>`
+        : `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">Received</span>`;
+
+      if (entry.kind === 'file') {
+        const meta = getFileTypeMeta(entry.name, entry.mime);
+        const canPreview = (meta.kind === 'image' && entry.blobUrl) || (meta.kind === 'text' && entry.fileBlob);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2.5">
+            <div class="flex items-center gap-3 min-w-0">
+              ${meta.kind === 'image' && entry.blobUrl ? `
+                <img src="${entry.blobUrl}" alt="thumb" class="w-11 h-11 rounded-xl object-cover border ${meta.border} shrink-0" />
+              ` : `
+                <div class="w-10 h-10 rounded-xl ${meta.bg} border ${meta.border} flex items-center justify-center text-lg shrink-0">
+                  ${meta.icon}
+                </div>
+              `}
+              <div class="min-w-0">
+                <p class="text-xs sm:text-sm font-semibold text-white truncate" title="${escapeHtml(entry.name)}">${escapeHtml(entry.name)}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-[11px] font-mono text-slate-400">${formatBytes(entry.size)}</span>
+                  <span class="text-[10px] font-bold ${meta.color}">${meta.label}</span>
+                </div>
+              </div>
+            </div>
+            ${dirBadge}
+          </div>
+          <div class="flex items-center gap-2">
+            ${canPreview ? `
+              <button type="button" class="preview-file-btn flex-1 py-2 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                Preview
+              </button>
+            ` : ''}
+            ${entry.blobUrl && entry.direction === 'received' ? `
+              <a href="${entry.blobUrl}" download="${escapeHtml(entry.name)}"
+                class="flex-1 py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+              </a>
+            ` : ''}
+          </div>
+        `;
+
+        const previewBtn = card.querySelector('.preview-file-btn');
+        if (previewBtn) {
+          previewBtn.addEventListener('click', () => openFilePreview(entry, meta));
+        }
+      } else {
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-semibold text-violet-300 flex items-center gap-1.5">
+              <span>📋</span> Clipboard / Text Snippet
+            </span>
+            ${dirBadge}
+          </div>
+          <p class="text-xs text-slate-200 bg-slate-950/65 rounded-xl p-2.5 break-words font-mono border border-white/5">${escapeHtml(entry.text)}</p>
+          <button type="button" class="copy-snippet-btn w-full py-2 px-3 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-400/30 text-violet-200 text-xs font-semibold transition cursor-pointer">
+            Copy Text
+          </button>
+        `;
+        card.querySelector('.copy-snippet-btn').addEventListener('click', () => {
+          copyTextToClipboard(entry.text, 'Text snippet copied!');
+        });
+      }
+
+      el.transferLogList.prepend(card);
+    }
+
+    /* =========================================================================
+       10. BUILT-IN DEMO TRANSFER SIMULATION (SINGLE-DEVICE ANIMATION PREVIEW)
+    ========================================================================= */
+    function runDemoTransfer() {
+      if (state.demoRunning) return;
+      state.demoRunning = true;
+
+      const demoSamples = [
+        { name: 'Holiday_4K_Reel.mp4', size: 68.4 * 1024 * 1024, mime: 'video/mp4' },
+        { name: 'Q4_Finance_Report.xlsx', size: 14.2 * 1024 * 1024, mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+        { name: 'Project_Proposal.docx', size: 9.8 * 1024 * 1024, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+        { name: 'Sunset_Panorama.png', size: 18.5 * 1024 * 1024, mime: 'image/png' },
+      ];
+      const sample = demoSamples[Math.floor(Math.random() * demoSamples.length)];
+      const meta = getFileTypeMeta(sample.name, sample.mime);
+
+      el.beamStage.classList.remove('hidden');
+      el.beamStageTitle.textContent = 'Demo Transfer — ShareKro Encrypted Beam';
+      el.activeRoomBadge.textContent = state.roomCode ? `ROOM: ${state.roomCode}` : 'DEMO MODE';
+      el.activeTransferMetrics.classList.remove('hidden');
+      el.metricFileBadge.textContent = meta.label;
+      el.metricFileBadge.className = `px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.bg} ${meta.color} ${meta.border}`;
+      el.metricFileName.textContent = sample.name;
+
+      startBeamAnimation(meta, 'send');
+      playChime('connect');
+
+      const durationMs = 3000;
+      const startTime = performance.now();
+
+      const tick = (now) => {
+        const progress = Math.min(1, (now - startTime) / durationMs);
+        const transferred = Math.floor(sample.size * progress);
+        updateMetricsUi(transferred, sample.size, startTime);
+
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          stopBeamAnimation();
+          el.beamStageTitle.textContent = 'ShareKro Encrypted Data Beam Ready';
+          addLogEntry({
+            id: 'demo_' + Date.now(),
+            direction: 'demo',
+            kind: 'file',
+            name: sample.name,
+            size: sample.size,
+            mime: sample.mime,
+          });
+          showCompletionCelebration('Demo Transfer Complete!', `${sample.name} (${formatBytes(sample.size)})`);
+          state.demoRunning = false;
+        }
+      };
+
+      requestAnimationFrame(tick);
+    }
+
+    /* =========================================================================
+       11. UI EVENT BINDINGS & MODE SWITCHING
+    ========================================================================= */
+    function switchMode(mode) {
+      state.mode = mode;
+      if (mode === 'send') {
+        el.tabSendBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25';
+        el.tabReceiveBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5';
+        el.sendPanel.classList.remove('hidden');
+        el.sendPanel.classList.add('flex');
+        el.receivePanel.classList.add('hidden');
+        el.receivePanel.classList.remove('flex');
+
+        if (!state.connected && state.role !== 'sender') {
+          createSenderRoom();
+        }
+      } else {
+        el.tabReceiveBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/25';
+        el.tabSendBtn.className = 'px-6 sm:px-8 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white hover:bg-white/5';
+        el.receivePanel.classList.remove('hidden');
+        el.receivePanel.classList.add('flex');
+        el.sendPanel.classList.add('hidden');
+        el.sendPanel.classList.remove('flex');
+      }
+    }
+
+    el.tabSendBtn.addEventListener('click', () => switchMode('send'));
+    el.tabReceiveBtn.addEventListener('click', () => switchMode('receive'));
+    el.demoTransferBtn.addEventListener('click', runDemoTransfer);
+
+    el.newRoomBtn.addEventListener('click', () => {
+      createSenderRoom();
+      showToast('Fresh ShareKro room created!', 'info');
+    });
+
+    el.copyCodeBtn.addEventListener('click', () => {
+      if (state.roomCode) copyTextToClipboard(state.roomCode, `ShareKro code ${state.roomCode} copied!`);
+    });
+
+    el.copyLinkBtn.addEventListener('click', () => {
+      if (state.roomCode) {
+        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${state.roomCode}`;
+        copyTextToClipboard(shareUrl, 'ShareKro direct link copied!');
+      }
+    });
+
+    el.applyPinBtn.addEventListener('click', async () => {
+      const pinRaw = el.senderPinInput.value.trim();
+      if (pinRaw && !/^\d{4}$/.test(pinRaw)) {
+        showToast('Please enter a 4-digit numeric PIN (or leave empty to remove).', 'warn');
+        return;
+      }
+      state.pinHash = pinRaw ? await hashPin(pinRaw) : null;
+      showToast(pinRaw ? '4-digit Room PIN lock enabled!' : 'Room PIN lock removed.', 'success');
+    });
+
+    el.joinRoomBtn.addEventListener('click', () => initiateJoinRoom(el.joinCodeInput.value));
+    el.joinCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') initiateJoinRoom(el.joinCodeInput.value);
+    });
+
+    el.disconnectBtn.addEventListener('click', () => {
+      cleanupConnection();
+      updateStatus('Disconnected', 'idle');
+      showToast('Disconnected from ShareKro tunnel.', 'info');
+      if (state.mode === 'send') {
+        createSenderRoom();
+      }
+    });
+
+    // PIN Modal Controls
+    el.pinModalCancel.addEventListener('click', () => {
+      el.pinModal.classList.add('hidden');
+      el.pinModal.classList.remove('flex');
+      cleanupConnection();
+      updateStatus('Ready', 'idle');
+    });
+
+    async function submitPinModal() {
+      const entered = el.pinModalInput.value.trim();
+      if (!entered || !state.conn || !state.conn.open) return;
+      const pinHash = await hashPin(entered);
+      state.conn.send(JSON.stringify({ type: 'auth-pin', pinHash }));
+    }
+    el.pinModalSubmit.addEventListener('click', submitPinModal);
+    el.pinModalInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitPinModal();
+    });
+
+    // Preview Modal Close
+    el.previewModalClose.addEventListener('click', () => {
+      el.previewModal.classList.add('hidden');
+      el.previewModal.classList.remove('flex');
+    });
+    el.previewModal.addEventListener('click', (e) => {
+      if (e.target === el.previewModal) {
+        el.previewModal.classList.add('hidden');
+        el.previewModal.classList.remove('flex');
+      }
+    });
+
+    // Sound Toggle
+    el.soundToggleBtn.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      el.soundOnIcon.classList.toggle('hidden', !state.soundEnabled);
+      el.soundOffIcon.classList.toggle('hidden', state.soundEnabled);
+      showToast(state.soundEnabled ? 'Completion chime enabled' : 'Sound muted', 'info');
+    });
+
+    // Drag & Drop + File & Folder Pickers
+    el.dropZone.addEventListener('click', () => el.fileInput.click());
+    el.browseFolderBtn.addEventListener('click', () => el.folderInput.click());
+
+    el.fileInput.addEventListener('change', (e) => {
+      enqueueFiles(e.target.files);
+      el.fileInput.value = '';
+    });
+
+    el.folderInput.addEventListener('change', (e) => {
+      enqueueFiles(e.target.files);
+      el.folderInput.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach(evtName => {
+      el.dropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.dropZone.classList.add('dropzone-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(evtName => {
+      el.dropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.dropZone.classList.remove('dropzone-active');
+      });
+    });
+
+    el.dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) {
+        enqueueFiles(e.dataTransfer.files);
+      }
+    });
+
+    // Quick Text Share
+    el.sendTextBtn.addEventListener('click', sendQuickText);
+    el.quickTextInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendQuickText();
+    });
+
+    // Clear Log
+    el.clearLogBtn.addEventListener('click', () => {
+      el.transferLogList.innerHTML = '';
+      state.logCount = 0;
+      el.logCountBadge.textContent = '0';
+      el.emptyLogState.classList.remove('hidden');
+      el.clearLogBtn.classList.add('hidden');
+    });
+
+    /* =========================================================================
+       12. BOOTSTRAP ON WINDOW LOAD
+    ========================================================================= */
+    window.addEventListener('load', () => {
+      initBackgroundCanvas();
+      initCustomCursor();
+      initScrollAndParallax();
+      initInteractiveElements();
+
+      // Auto-join if ?room=CODE is present in URL (QR scan or shared link)
+      const params = new URLSearchParams(window.location.search);
+      const urlRoom = params.get('room');
+
+      if (urlRoom && urlRoom.trim().length >= 6) {
+        switchMode('receive');
+        el.joinCodeInput.value = urlRoom.trim().toUpperCase().slice(0, 6);
+        initiateJoinRoom(urlRoom);
+      } else {
+        switchMode('send');
+        createSenderRoom();
+      }
+    });
+  </script>
+</body>
+</html>
